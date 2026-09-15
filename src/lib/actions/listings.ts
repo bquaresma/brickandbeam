@@ -13,6 +13,8 @@ function parseListingForm(formData: FormData) {
   const story = String(formData.get("story") ?? "").trim();
   const leaseTerm = String(formData.get("leaseTerm") ?? "").trim();
   const virtualTourUrl = String(formData.get("virtualTourUrl") ?? "").trim();
+  const heroPhotoUrl = String(formData.get("heroPhotoUrl") ?? "").trim();
+  const floorPlanUrl = String(formData.get("floorPlanUrl") ?? "").trim();
   const statusRaw = String(formData.get("status") ?? "DRAFT");
 
   if (!story) {
@@ -32,6 +34,8 @@ function parseListingForm(formData: FormData) {
     story,
     leaseTerm: leaseTerm || null,
     virtualTourUrl: virtualTourUrl || null,
+    heroPhotoUrl: heroPhotoUrl || null,
+    floorPlanUrl: floorPlanUrl || null,
     status,
   };
 }
@@ -56,7 +60,7 @@ export async function createListing(
   const existing = await prisma.listing.findUnique({ where: { unitId } });
   if (existing) throw new Error("This unit already has a listing.");
 
-  await prisma.listing.create({
+  const listing = await prisma.listing.create({
     data: {
       ...data,
       unitId,
@@ -65,6 +69,7 @@ export async function createListing(
   });
 
   revalidatePath(`/dashboard/properties/${propertyId}`);
+  revalidatePath(`/listings/${listing.id}`);
   redirect(`/dashboard/properties/${propertyId}`);
 }
 
@@ -94,6 +99,7 @@ export async function updateListing(
   });
 
   revalidatePath(`/dashboard/properties/${propertyId}`);
+  revalidatePath(`/listings/${listingId}`);
   redirect(`/dashboard/properties/${propertyId}`);
 }
 

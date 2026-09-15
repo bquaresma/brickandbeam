@@ -152,6 +152,15 @@ export default async function PropertyDetailPage({
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-2">
+                      {unit.listing.status === "PUBLISHED" && (
+                        <Link
+                          href={`/listings/${unit.listing.id}`}
+                          target="_blank"
+                          className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-white"
+                        >
+                          View public page
+                        </Link>
+                      )}
                       <Link
                         href={`/dashboard/properties/${property.id}/units/${unit.id}/listing/edit`}
                         className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-white"

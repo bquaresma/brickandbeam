@@ -325,6 +325,11 @@ model Listing {
 
   virtualTourUrl String?
 
+  // Stubbed as plain URLs for now rather than an upload pipeline — swap for
+  // real photo storage (R2/S3) without touching anything that reads these.
+  heroPhotoUrl String?
+  floorPlanUrl String?
+
   status      ListingStatus @default(DRAFT)
   publishedAt DateTime?
 

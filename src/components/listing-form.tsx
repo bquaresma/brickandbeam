@@ -4,6 +4,8 @@ type ListingFormValues = {
   story?: string;
   leaseTerm?: string | null;
   virtualTourUrl?: string | null;
+  heroPhotoUrl?: string | null;
+  floorPlanUrl?: string | null;
   status?: string;
 };
 
@@ -104,6 +106,44 @@ export function ListingForm({
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="heroPhotoUrl"
+            className="block text-sm font-medium text-stone-700"
+          >
+            Hero photo URL (optional)
+          </label>
+          <input
+            id="heroPhotoUrl"
+            name="heroPhotoUrl"
+            type="url"
+            placeholder="https://…"
+            defaultValue={defaultValues?.heroPhotoUrl ?? ""}
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="floorPlanUrl"
+            className="block text-sm font-medium text-stone-700"
+          >
+            Floor plan URL (optional)
+          </label>
+          <input
+            id="floorPlanUrl"
+            name="floorPlanUrl"
+            type="url"
+            placeholder="https://…"
+            defaultValue={defaultValues?.floorPlanUrl ?? ""}
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          />
+        </div>
+      </div>
+      <p className="-mt-2 text-xs text-stone-500">
+        Plain image URLs for now — file upload comes with real photo storage later.
+      </p>
+
       <div>
         <label htmlFor="status" className="block text-sm font-medium text-stone-700">
           Status
@@ -119,8 +159,8 @@ export function ListingForm({
           <option value="ARCHIVED">Archived</option>
         </select>
         <p className="mt-1 text-xs text-stone-500">
-          Published listings don&apos;t have a public page yet — this just tracks status
-          for now.
+          Published listings are visible on their public page; draft and archived listings
+          return a 404 to anyone but you.
         </p>
       </div>
 

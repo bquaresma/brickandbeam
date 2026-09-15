@@ -4,8 +4,8 @@ A landlord toolkit for one-of-a-kind older homes (pre-1978 character properties)
 urban neighborhoods. See [`planning/old-home-rental-toolkit-plan.md`](planning/old-home-rental-toolkit-plan.md)
 for the full product plan.
 
-This repo currently holds the **Phase 1 skeleton**: landlord auth, and property/unit/listing CRUD.
-No public listing page, Zillow feed integration, screening, or payments yet.
+This repo currently holds the **Phase 1 skeleton**: landlord auth, property/unit/listing CRUD, and
+a public listing page. No Zillow feed integration, screening, or payments yet.
 
 ## Stack
 
@@ -84,20 +84,23 @@ then add properties and units from `/dashboard`.
 
 - **User** — landlord/applicant/team-member (role-based; only `LANDLORD` is used today), plus the
   standard Auth.js `Account`/`Session`/`VerificationToken` tables
-- **Property** — address + `buildYear`. `buildYear < 1978` drives the federal lead-based paint
-  disclosure gate (see `src/lib/compliance.ts`)
+- **Property** — address + `buildYear` + `neighborhoodBlurb` (shared across every unit's listing at
+  that address). `buildYear < 1978` drives the federal lead-based paint disclosure gate (see
+  `src/lib/compliance.ts`)
 - **Unit** — belongs to a Property; supports non-standard layouts via optional `bedrooms`/
   `bathrooms`/`squareFeet` plus freeform `layoutNotes` and a flexible `rooms` JSON field for
   future structured room data. Also carries `dateAvailable`, `isFurnished`, `smokingAllowed`,
-  and `parkingType`, plus related `Amenity`, `PetPolicy`, and `Fee` records
+  and `parkingType`, plus related `Amenity`, `PetPolicy`, `Fee`, and `Utility` records — all
+  managed from `/dashboard/properties/[id]/units/[unitId]/details`
 - **Listing** — one per Unit, with a first-class `story` narrative field, a short `previewMessage`
-  teaser, `leaseTerm`, `virtualTourUrl`, and a `DRAFT`/`PUBLISHED`/`ARCHIVED` status. Landlord-side
-  CRUD is built (`/dashboard/properties/[id]/units/[unitId]/listing/new` and `/edit`); there's no
-  public listing page yet (Phase 1 next step)
-- **Amenity / PetPolicy / Fee** — lightweight, unit-scoped records shaped to match the field names
-  used by Zillow's Rental Listing feed (tag-based amenities, per-pet-type policies, typed fees with
-  timing/refundability), so a future syndication export doesn't force a schema rewrite. No CRUD UI
-  yet — schema only
+  teaser, `leaseTerm`, `virtualTourUrl`, `heroPhotoUrl`/`floorPlanUrl` (plain URLs for now — no
+  upload pipeline yet), and a `DRAFT`/`PUBLISHED`/`ARCHIVED` status. Landlord-side CRUD is at
+  `/dashboard/properties/[id]/units/[unitId]/listing/new` and `/edit`; published listings are
+  publicly viewable at `/listings/[listingId]` (draft/archived return a 404 to non-owners)
+- **Amenity / PetPolicy / Fee / Utility** — unit-scoped records shaped to match the field names used
+  by Zillow's Rental Listing feed (tag-based amenities, per-pet-type policies, typed fees with
+  timing/refundability, per-utility included-vs-tenant-pays), so a future syndication export
+  doesn't force a schema rewrite. Full CRUD for all four lives on the unit details page
 
 ## Auth notes
 
