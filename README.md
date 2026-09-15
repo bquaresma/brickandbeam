@@ -4,8 +4,8 @@ A landlord toolkit for one-of-a-kind older homes (pre-1978 character properties)
 urban neighborhoods. See [`planning/old-home-rental-toolkit-plan.md`](planning/old-home-rental-toolkit-plan.md)
 for the full product plan.
 
-This repo currently holds the **Phase 1 skeleton**: landlord auth, and property/unit CRUD. No
-public listing page, Zillow feed integration, screening, or payments yet.
+This repo currently holds the **Phase 1 skeleton**: landlord auth, and property/unit/listing CRUD.
+No public listing page, Zillow feed integration, screening, or payments yet.
 
 ## Stack
 
@@ -70,15 +70,15 @@ then add properties and units from `/dashboard`.
 
 ## Useful scripts
 
-| Script | What it does |
-|---|---|
-| `npm run dev` | Start the dev server |
-| `npm run build` | Production build |
-| `npm run lint` | ESLint |
-| `npm run format` | Format with Prettier |
-| `npm run format:check` | Check formatting without writing |
-| `npm run db:migrate` | `prisma migrate dev` |
-| `npm run db:studio` | Open Prisma Studio (visual DB browser) |
+| Script                 | What it does                           |
+| ---------------------- | -------------------------------------- |
+| `npm run dev`          | Start the dev server                   |
+| `npm run build`        | Production build                       |
+| `npm run lint`         | ESLint                                 |
+| `npm run format`       | Format with Prettier                   |
+| `npm run format:check` | Check formatting without writing       |
+| `npm run db:migrate`   | `prisma migrate dev`                   |
+| `npm run db:studio`    | Open Prisma Studio (visual DB browser) |
 
 ## Data model
 
@@ -89,8 +89,9 @@ then add properties and units from `/dashboard`.
 - **Unit** — belongs to a Property; supports non-standard layouts via optional `bedrooms`/
   `bathrooms`/`squareFeet` plus freeform `layoutNotes` and a flexible `rooms` JSON field for
   future structured room data
-- **Listing** — one per Unit, with a first-class `story` narrative field. Schema only for now — no
-  CRUD UI or public page yet (Phase 1 next step)
+- **Listing** — one per Unit, with a first-class `story` narrative field and a `DRAFT`/
+  `PUBLISHED`/`ARCHIVED` status. Landlord-side CRUD is built (`/dashboard/properties/[id]/units/
+  [unitId]/listing/new` and `/edit`); there's no public listing page yet (Phase 1 next step)
 
 ## Auth notes
 
