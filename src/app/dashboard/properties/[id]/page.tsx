@@ -111,6 +111,12 @@ export default async function PropertyDetailPage({
                 </div>
                 <div className="flex gap-2">
                   <Link
+                    href={`/dashboard/properties/${property.id}/units/${unit.id}/details`}
+                    className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+                  >
+                    Amenities &amp; utilities
+                  </Link>
+                  <Link
                     href={`/dashboard/properties/${property.id}/units/${unit.id}/edit`}
                     className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
                   >

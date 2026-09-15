@@ -15,6 +15,7 @@ function parsePropertyForm(formData: FormData) {
   const zip = String(formData.get("zip") ?? "").trim();
   const buildYearRaw = String(formData.get("buildYear") ?? "").trim();
   const buildYear = Number.parseInt(buildYearRaw, 10);
+  const neighborhoodBlurb = String(formData.get("neighborhoodBlurb") ?? "").trim();
 
   if (!addressLine1 || !city || !state || !zip) {
     throw new Error("Address, city, state, and zip are required.");
@@ -35,6 +36,7 @@ function parsePropertyForm(formData: FormData) {
     state,
     zip,
     buildYear,
+    neighborhoodBlurb: neighborhoodBlurb || null,
   };
 }
 

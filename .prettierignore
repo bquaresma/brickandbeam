@@ -2,3 +2,8 @@ node_modules
 .next
 prisma/migrations
 package-lock.json
+
+# Design Component source files (.dc.html) use a non-standard template
+# format (<x-dc>, <helmet>, <sc-for>, ...) that Prettier's HTML printer
+# reformats destructively without understanding.
+design/

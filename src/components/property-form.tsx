@@ -6,6 +6,7 @@ type PropertyFormValues = {
   state?: string;
   zip?: string;
   buildYear?: number;
+  neighborhoodBlurb?: string | null;
 };
 
 export function PropertyForm({
@@ -129,6 +130,26 @@ export function PropertyForm({
         <p className="mt-1 text-xs text-stone-500">
           Properties built before 1978 trigger the federal lead-paint disclosure
           requirement.
+        </p>
+      </div>
+
+      <div>
+        <label
+          htmlFor="neighborhoodBlurb"
+          className="block text-sm font-medium text-stone-700"
+        >
+          Neighborhood blurb (optional)
+        </label>
+        <textarea
+          id="neighborhoodBlurb"
+          name="neighborhoodBlurb"
+          rows={4}
+          placeholder="A short paragraph on the neighborhood and walkability — shown on every listing at this address."
+          defaultValue={defaultValues?.neighborhoodBlurb ?? ""}
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-stone-500">
+          Shared across every unit&apos;s listing at this property.
         </p>
       </div>
 

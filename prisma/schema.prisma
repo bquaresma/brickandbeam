@@ -105,6 +105,10 @@ model Property {
   // requires the Title X disclosure workflow before a lease is signed.
   buildYear Int
 
+  // Narrative about the location/walkability — shared across every unit at
+  // this address, so it lives here rather than being duplicated per Listing.
+  neighborhoodBlurb String?
+
   units Unit[]
 
   createdAt DateTime @default(now())
@@ -155,6 +159,7 @@ model Unit {
   amenities   Amenity[]
   petPolicies PetPolicy[]
   fees        Fee[]
+  utilities   Utility[]
 
   listing Listing?
 
@@ -164,19 +169,55 @@ model Unit {
   @@map("units")
 }
 
-// A single amenity tag, e.g. "Dishwasher", "Pool", "In-unit laundry".
-// Free-text rather than a fixed enum — amenities are open-ended, and this
-// mirrors Zillow's own tag-based (not rigid-column) amenity representation.
+enum AmenityCategory {
+  AMENITY
+  APPLIANCE
+}
+
+// A single amenity or appliance tag, e.g. "Dishwasher", "Pool", "In-unit
+// laundry". Free-text rather than a fixed enum — both are open-ended, and
+// this mirrors Zillow's own tag-based (not rigid-column) representation.
+// `category` just splits the same free-text tag list into the two sections
+// a listing page shows separately ("Appliances Included" vs "Amenities").
 model Amenity {
   id     String @id @default(cuid())
   unitId String
   unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
-  label String
+  label    String
+  category AmenityCategory @default(AMENITY)
 
   createdAt DateTime @default(now())
 
   @@map("amenities")
+}
+
+enum UtilityType {
+  WATER
+  GAS
+  ELECTRIC
+  TRASH
+  SEWER
+  INTERNET
+  CABLE
+  OTHER
+}
+
+// One row per utility that's relevant to a unit; a missing type means "not
+// applicable" rather than "tenant pays". `included` is who pays: true means
+// it's rolled into rent, false means the tenant sets it up themselves.
+model Utility {
+  id     String @id @default(cuid())
+  unitId String
+  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  type     UtilityType
+  included Boolean
+
+  createdAt DateTime @default(now())
+
+  @@unique([unitId, type])
+  @@map("utilities")
 }
 
 enum PetType {
