@@ -1,6 +1,9 @@
 type ListingFormValues = {
   headline?: string | null;
+  previewMessage?: string | null;
   story?: string;
+  leaseTerm?: string | null;
+  virtualTourUrl?: string | null;
   status?: string;
 };
 
@@ -33,6 +36,24 @@ export function ListingForm({
       </div>
 
       <div>
+        <label
+          htmlFor="previewMessage"
+          className="block text-sm font-medium text-stone-700"
+        >
+          Preview message (optional)
+        </label>
+        <input
+          id="previewMessage"
+          name="previewMessage"
+          type="text"
+          maxLength={255}
+          placeholder="A short teaser shown in search results — separate from the full story below"
+          defaultValue={defaultValues?.previewMessage ?? ""}
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+        />
+      </div>
+
+      <div>
         <label htmlFor="story" className="block text-sm font-medium text-stone-700">
           Story
         </label>
@@ -49,6 +70,38 @@ export function ListingForm({
           This narrative is the centerpiece of the listing — not an afterthought below a
           spec grid.
         </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="leaseTerm" className="block text-sm font-medium text-stone-700">
+            Lease term (optional)
+          </label>
+          <input
+            id="leaseTerm"
+            name="leaseTerm"
+            type="text"
+            placeholder="12 Months, Month-to-month…"
+            defaultValue={defaultValues?.leaseTerm ?? ""}
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="virtualTourUrl"
+            className="block text-sm font-medium text-stone-700"
+          >
+            Virtual tour URL (optional)
+          </label>
+          <input
+            id="virtualTourUrl"
+            name="virtualTourUrl"
+            type="url"
+            placeholder="https://…"
+            defaultValue={defaultValues?.virtualTourUrl ?? ""}
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          />
+        </div>
       </div>
 
       <div>

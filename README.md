@@ -88,10 +88,16 @@ then add properties and units from `/dashboard`.
   disclosure gate (see `src/lib/compliance.ts`)
 - **Unit** — belongs to a Property; supports non-standard layouts via optional `bedrooms`/
   `bathrooms`/`squareFeet` plus freeform `layoutNotes` and a flexible `rooms` JSON field for
-  future structured room data
-- **Listing** — one per Unit, with a first-class `story` narrative field and a `DRAFT`/
-  `PUBLISHED`/`ARCHIVED` status. Landlord-side CRUD is built (`/dashboard/properties/[id]/units/
-  [unitId]/listing/new` and `/edit`); there's no public listing page yet (Phase 1 next step)
+  future structured room data. Also carries `dateAvailable`, `isFurnished`, `smokingAllowed`,
+  and `parkingType`, plus related `Amenity`, `PetPolicy`, and `Fee` records
+- **Listing** — one per Unit, with a first-class `story` narrative field, a short `previewMessage`
+  teaser, `leaseTerm`, `virtualTourUrl`, and a `DRAFT`/`PUBLISHED`/`ARCHIVED` status. Landlord-side
+  CRUD is built (`/dashboard/properties/[id]/units/[unitId]/listing/new` and `/edit`); there's no
+  public listing page yet (Phase 1 next step)
+- **Amenity / PetPolicy / Fee** — lightweight, unit-scoped records shaped to match the field names
+  used by Zillow's Rental Listing feed (tag-based amenities, per-pet-type policies, typed fees with
+  timing/refundability), so a future syndication export doesn't force a schema rewrite. No CRUD UI
+  yet — schema only
 
 ## Auth notes
 

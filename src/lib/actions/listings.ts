@@ -9,11 +9,17 @@ import { requireLandlord } from "@/lib/current-user";
 
 function parseListingForm(formData: FormData) {
   const headline = String(formData.get("headline") ?? "").trim();
+  const previewMessage = String(formData.get("previewMessage") ?? "").trim();
   const story = String(formData.get("story") ?? "").trim();
+  const leaseTerm = String(formData.get("leaseTerm") ?? "").trim();
+  const virtualTourUrl = String(formData.get("virtualTourUrl") ?? "").trim();
   const statusRaw = String(formData.get("status") ?? "DRAFT");
 
   if (!story) {
     throw new Error("Tell the story of this place — the narrative can't be empty.");
+  }
+  if (previewMessage.length > 255) {
+    throw new Error("Preview message must be 255 characters or fewer.");
   }
 
   const status = Object.values(ListingStatus).includes(statusRaw as ListingStatus)
@@ -22,7 +28,10 @@ function parseListingForm(formData: FormData) {
 
   return {
     headline: headline || null,
+    previewMessage: previewMessage || null,
     story,
+    leaseTerm: leaseTerm || null,
+    virtualTourUrl: virtualTourUrl || null,
     status,
   };
 }

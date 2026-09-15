@@ -113,6 +113,16 @@ model Property {
   @@map("properties")
 }
 
+enum ParkingType {
+  GARAGE_ATTACHED
+  GARAGE_LOT
+  COVERED_LOT
+  STREET
+  SURFACE_LOT
+  OTHER
+  NONE
+}
+
 model Unit {
   id String @id @default(cuid())
 
@@ -135,12 +145,116 @@ model Unit {
   // Freeform description of layout quirks, shown alongside `rooms`.
   layoutNotes String?
 
+  // Fields below mirror the Zillow Rental Listing feed's single-unit schema,
+  // so a future syndication export doesn't require a data-model rewrite.
+  dateAvailable  DateTime?
+  isFurnished    Boolean?
+  smokingAllowed Boolean?
+  parkingType    ParkingType?
+
+  amenities   Amenity[]
+  petPolicies PetPolicy[]
+  fees        Fee[]
+
   listing Listing?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("units")
+}
+
+// A single amenity tag, e.g. "Dishwasher", "Pool", "In-unit laundry".
+// Free-text rather than a fixed enum — amenities are open-ended, and this
+// mirrors Zillow's own tag-based (not rigid-column) amenity representation.
+model Amenity {
+  id     String @id @default(cuid())
+  unitId String
+  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  label String
+
+  createdAt DateTime @default(now())
+
+  @@map("amenities")
+}
+
+enum PetType {
+  DOGS
+  CATS
+  BIRDS
+  REPTILES
+  FISH
+  OTHER
+}
+
+enum PetSize {
+  SMALL
+  LARGE
+}
+
+model PetPolicy {
+  id     String @id @default(cuid())
+  unitId String
+  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  petType PetType
+  petSize PetSize?
+  allowed Boolean
+
+  createdAt DateTime @default(now())
+
+  @@map("pet_policies")
+}
+
+enum FeeType {
+  SECURITY_DEPOSIT
+  APPLICATION_FEE
+  PET_RENT
+  PET_DEPOSIT
+  PET_FEE
+  PARKING_FEE
+  PARKING_PERMIT
+  STORAGE_FEE
+  SEWER_FEE
+  GARBAGE_FEE
+  OTHER
+}
+
+enum FeeTiming {
+  MOVE_IN
+  AT_APPLICATION
+  MONTHLY
+  ONE_TIME_OTHER
+  RECURRING_OTHER
+}
+
+enum FeeRequirement {
+  MANDATORY
+  OPTIONAL
+  SITUATIONAL
+}
+
+enum FeeRefundable {
+  REFUNDABLE
+  NON_REFUNDABLE
+}
+
+model Fee {
+  id     String @id @default(cuid())
+  unitId String
+  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  type        FeeType
+  amountCents Int? // flat amount; null when described in `description` instead
+  description String? // free text, used for OTHER / situational fees
+  timing      FeeTiming
+  requirement FeeRequirement @default(MANDATORY)
+  refundable  FeeRefundable?
+
+  createdAt DateTime @default(now())
+
+  @@map("fees")
 }
 
 enum ListingStatus {
@@ -157,8 +271,18 @@ model Listing {
 
   headline String?
 
+  // Short teaser shown in search results, distinct from the full narrative
+  // below (mirrors Zillow's separate previewMessage/description fields).
+  previewMessage String?
+
   // Narrative/story text — first-class field, not an afterthought.
   story String
+
+  // Free text, e.g. "12 Months", "Month-to-month" — kept loose rather than
+  // a rigid enum since lease terms vary more than a fixed list captures.
+  leaseTerm String?
+
+  virtualTourUrl String?
 
   status      ListingStatus @default(DRAFT)
   publishedAt DateTime?

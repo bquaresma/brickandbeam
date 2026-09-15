@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { ParkingType } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
 
@@ -13,6 +15,8 @@ function parseUnitForm(formData: FormData) {
   const bathroomsRaw = String(formData.get("bathrooms") ?? "").trim();
   const squareFeetRaw = String(formData.get("squareFeet") ?? "").trim();
   const layoutNotes = String(formData.get("layoutNotes") ?? "").trim();
+  const dateAvailableRaw = String(formData.get("dateAvailable") ?? "").trim();
+  const parkingTypeRaw = String(formData.get("parkingType") ?? "").trim();
 
   if (!name) {
     throw new Error("Unit name is required.");
@@ -22,6 +26,9 @@ function parseUnitForm(formData: FormData) {
   const bedrooms = bedroomsRaw ? Number.parseFloat(bedroomsRaw) : null;
   const bathrooms = bathroomsRaw ? Number.parseFloat(bathroomsRaw) : null;
   const squareFeet = squareFeetRaw ? Number.parseInt(squareFeetRaw, 10) : null;
+  const parkingType = Object.values(ParkingType).includes(parkingTypeRaw as ParkingType)
+    ? (parkingTypeRaw as ParkingType)
+    : null;
 
   return {
     name,
@@ -33,6 +40,10 @@ function parseUnitForm(formData: FormData) {
     bathrooms: bathrooms !== null && !Number.isNaN(bathrooms) ? bathrooms : null,
     squareFeet: squareFeet !== null && !Number.isNaN(squareFeet) ? squareFeet : null,
     layoutNotes: layoutNotes || null,
+    dateAvailable: dateAvailableRaw ? new Date(dateAvailableRaw) : null,
+    isFurnished: formData.get("isFurnished") === "on",
+    smokingAllowed: formData.get("smokingAllowed") === "on",
+    parkingType,
   };
 }
 

@@ -5,7 +5,22 @@ type UnitFormValues = {
   bathrooms?: number | null;
   squareFeet?: number | null;
   layoutNotes?: string | null;
+  dateAvailable?: Date | null;
+  isFurnished?: boolean | null;
+  smokingAllowed?: boolean | null;
+  parkingType?: string | null;
 };
+
+const PARKING_TYPE_OPTIONS = [
+  { value: "", label: "Not specified" },
+  { value: "GARAGE_ATTACHED", label: "Attached garage" },
+  { value: "GARAGE_LOT", label: "Garage lot" },
+  { value: "COVERED_LOT", label: "Covered lot" },
+  { value: "STREET", label: "Street" },
+  { value: "SURFACE_LOT", label: "Surface lot" },
+  { value: "OTHER", label: "Other" },
+  { value: "NONE", label: "None" },
+];
 
 export function UnitForm({
   action,
@@ -18,6 +33,9 @@ export function UnitForm({
 }) {
   const rentDollars =
     defaultValues?.rentAmountCents != null ? defaultValues.rentAmountCents / 100 : "";
+  const dateAvailable = defaultValues?.dateAvailable
+    ? new Date(defaultValues.dateAvailable).toISOString().slice(0, 10)
+    : "";
 
   return (
     <form
@@ -116,6 +134,65 @@ export function UnitForm({
         <p className="mt-1 text-xs text-stone-500">
           Use this for anything that doesn&apos;t fit a standard bed/bath grid.
         </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="dateAvailable"
+            className="block text-sm font-medium text-stone-700"
+          >
+            Available on
+          </label>
+          <input
+            id="dateAvailable"
+            name="dateAvailable"
+            type="date"
+            defaultValue={dateAvailable}
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="parkingType"
+            className="block text-sm font-medium text-stone-700"
+          >
+            Parking
+          </label>
+          <select
+            id="parkingType"
+            name="parkingType"
+            defaultValue={defaultValues?.parkingType ?? ""}
+            className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          >
+            {PARKING_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex gap-6">
+        <label className="flex items-center gap-2 text-sm text-stone-700">
+          <input
+            type="checkbox"
+            name="isFurnished"
+            defaultChecked={defaultValues?.isFurnished ?? false}
+            className="rounded border-stone-300"
+          />
+          Furnished
+        </label>
+        <label className="flex items-center gap-2 text-sm text-stone-700">
+          <input
+            type="checkbox"
+            name="smokingAllowed"
+            defaultChecked={defaultValues?.smokingAllowed ?? false}
+            className="rounded border-stone-300"
+          />
+          Smoking allowed
+        </label>
       </div>
 
       <button
