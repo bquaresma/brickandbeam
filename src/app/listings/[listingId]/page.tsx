@@ -4,6 +4,7 @@ import { Spectral } from "next/font/google";
 
 import { prisma } from "@/lib/prisma";
 import { requiresLeadPaintDisclosure } from "@/lib/compliance";
+import { createLead } from "@/lib/actions/leads";
 import {
   BedIcon,
   BathIcon,
@@ -149,10 +150,13 @@ export async function generateMetadata({
 
 export default async function PublicListingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ listingId: string }>;
+  searchParams: Promise<{ sent?: string }>;
 }) {
   const { listingId } = await params;
+  const { sent } = await searchParams;
   const listing = await getListing(listingId);
   if (!listing) notFound();
 
@@ -261,16 +265,14 @@ export default async function PublicListingPage({
             </span>
           </div>
           <div className="flex gap-2">
-            {mailtoHref && (
-              <a
-                href={mailtoHref}
-                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#B08A4A]"
-                style={{ backgroundColor: BRICK }}
-              >
-                <MailIcon className="h-4 w-4" />
-                Request a Showing
-              </a>
-            )}
+            <a
+              href="#contact"
+              className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#B08A4A]"
+              style={{ backgroundColor: BRICK }}
+            >
+              <MailIcon className="h-4 w-4" />
+              Request a Showing
+            </a>
             {listing.virtualTourUrl && (
               <a
                 href={listing.virtualTourUrl}
@@ -562,28 +564,88 @@ export default async function PublicListingPage({
         )}
 
         <section
-          className="mt-12 rounded-xl px-6 py-10 text-center"
+          id="contact"
+          className="mt-12 scroll-mt-8 rounded-xl px-6 py-10"
           style={{ backgroundColor: CHARCOAL }}
         >
-          <h2
-            className="text-2xl font-medium text-white"
-            style={{ fontFamily: "var(--font-spectral)" }}
-          >
-            Interested in this home?
-          </h2>
-          {mailtoHref ? (
-            <a
-              href={mailtoHref}
-              className="mt-5 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#f7ede0]"
-              style={{ color: CHARCOAL }}
-            >
-              <MailIcon className="h-4 w-4" />
-              Request a Showing
-            </a>
+          {sent === "true" ? (
+            <div className="text-center">
+              <h2
+                className="text-2xl font-medium text-white"
+                style={{ fontFamily: "var(--font-spectral)" }}
+              >
+                Thanks — your message is on its way.
+              </h2>
+              <p className="mt-2 text-sm" style={{ color: `${PLASTER}99` }}>
+                {property.landlord.name || "The landlord"} typically responds within a
+                day.
+              </p>
+            </div>
           ) : (
-            <p className="mt-2 text-sm text-stone-400">
-              Contact information unavailable.
-            </p>
+            <>
+              <h2
+                className="text-center text-2xl font-medium text-white"
+                style={{ fontFamily: "var(--font-spectral)" }}
+              >
+                Interested in this home?
+              </h2>
+              <p className="mt-2 text-center text-sm" style={{ color: `${PLASTER}99` }}>
+                Send a message and {property.landlord.name || "the landlord"} will follow
+                up directly.
+              </p>
+
+              <form
+                action={createLead.bind(null, listing.id)}
+                className="mx-auto mt-6 flex max-w-md flex-col gap-3"
+              >
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  placeholder="Your name"
+                  className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
+                  style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}
+                />
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  placeholder="Email"
+                  className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
+                  style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}
+                />
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Phone (optional)"
+                  className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
+                  style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}
+                />
+                <textarea
+                  name="message"
+                  rows={3}
+                  placeholder="I'd like to see this place…"
+                  className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
+                  style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}
+                />
+                <button
+                  type="submit"
+                  className="rounded-md bg-white px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#f7ede0]"
+                  style={{ color: CHARCOAL }}
+                >
+                  Send Request
+                </button>
+              </form>
+
+              {mailtoHref && (
+                <p className="mt-4 text-center text-xs" style={{ color: `${PLASTER}80` }}>
+                  Prefer email?{" "}
+                  <a href={mailtoHref} className="underline hover:text-white">
+                    Contact directly
+                  </a>
+                </p>
+              )}
+            </>
           )}
         </section>
 

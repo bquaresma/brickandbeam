@@ -333,8 +333,36 @@ model Listing {
   status      ListingStatus @default(DRAFT)
   publishedAt DateTime?
 
+  leads Lead[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("listings")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  ARCHIVED
+}
+
+// An inquiry submitted from a public listing page. Intentionally has no
+// landlordId of its own — ownership is always derived through
+// listing -> unit -> property, same as every other unit-scoped record.
+model Lead {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  name    String
+  email   String
+  phone   String?
+  message String?
+
+  status LeadStatus @default(NEW)
+
+  createdAt DateTime @default(now())
+
+  @@map("leads")
 }

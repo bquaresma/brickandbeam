@@ -4,8 +4,9 @@ A landlord toolkit for one-of-a-kind older homes (pre-1978 character properties)
 urban neighborhoods. See [`planning/old-home-rental-toolkit-plan.md`](planning/old-home-rental-toolkit-plan.md)
 for the full product plan.
 
-This repo currently holds the **Phase 1 skeleton**: landlord auth, property/unit/listing CRUD, and
-a public listing page. No Zillow feed integration, screening, or payments yet.
+This repo currently holds the **Phase 1 skeleton**: landlord auth, property/unit/listing CRUD, a
+public listing page, and lead capture. No prescreening questionnaire, rental application, Zillow
+feed integration, screening, or payments yet.
 
 ## Stack
 
@@ -101,6 +102,10 @@ then add properties and units from `/dashboard`.
   by Zillow's Rental Listing feed (tag-based amenities, per-pet-type policies, typed fees with
   timing/refundability, per-utility included-vs-tenant-pays), so a future syndication export
   doesn't force a schema rewrite. Full CRUD for all four lives on the unit details page
+- **Lead** — an inquiry submitted from a public listing page's contact form (name, email, phone,
+  message), scoped to a Listing. `NEW` / `CONTACTED` / `ARCHIVED` status, managed from
+  `/dashboard/leads` — a single inbox across every property, with an unread-count badge in the
+  dashboard nav
 
 ## Brand notes
 
