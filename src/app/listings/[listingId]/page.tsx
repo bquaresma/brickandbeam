@@ -26,7 +26,19 @@ const spectral = Spectral({
   variable: "--font-spectral",
 });
 
-const ACCENT = "#a1481f";
+// Brand palette — "Industrial Heritage". Scoped to this public-facing page
+// only; the landlord dashboard stays plain/utilitarian on purpose.
+const BRICK = "#9A4635"; // primary accent: CTAs, eyebrows, icons
+const TIMBER = "#6B4A34"; // secondary text, borders, dividers
+const PLASTER = "#F3E8D8"; // page background
+const CHARCOAL = "#262626"; // headings, dark panel
+// Brass (#B08A4A) is used directly in `hover:` utility classes below rather
+// than via this constant — Tailwind only picks up literal class strings.
+const SAGE = "#5f6b52"; // secondary accent (amenities, "allowed" states) — darkened from #8F9B7A for text contrast
+
+// Subtle plaster-grain texture, layered under the flat background color.
+const GRAIN_BG =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E\")";
 
 const PARKING_LABELS: Record<string, string> = {
   GARAGE_ATTACHED: "Attached garage",
@@ -90,7 +102,7 @@ function Eyebrow({
   return (
     <h2
       className="flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase"
-      style={{ color: ACCENT }}
+      style={{ color: BRICK }}
     >
       {icon}
       {children}
@@ -166,17 +178,23 @@ export default async function PublicListingPage({
     : null;
 
   return (
-    <div className={`${spectral.variable} min-h-screen bg-stone-50`}>
-      <header className="border-b border-stone-200 bg-white">
+    <div
+      className={`${spectral.variable} min-h-screen`}
+      style={{ backgroundColor: PLASTER, backgroundImage: GRAIN_BG }}
+    >
+      <header className="border-b bg-white" style={{ borderColor: `${TIMBER}26` }}>
         <div className="mx-auto flex max-w-3xl items-baseline justify-between px-4 py-5">
           <span
-            className="text-lg font-semibold text-stone-900"
-            style={{ fontFamily: "var(--font-spectral)" }}
+            className="text-lg font-semibold"
+            style={{ fontFamily: "var(--font-spectral)", color: CHARCOAL }}
           >
             Brick &amp; Beam
           </span>
-          <span className="text-xs font-medium tracking-wide text-stone-400 uppercase">
-            Character Home Rentals
+          <span
+            className="text-xs font-medium tracking-wide uppercase"
+            style={{ color: `${TIMBER}99` }}
+          >
+            Historic homes. Warmly rented.
           </span>
         </div>
       </header>
@@ -187,10 +205,14 @@ export default async function PublicListingPage({
           <img
             src={listing.heroPhotoUrl}
             alt={listing.headline || unit.name}
-            className="aspect-video w-full rounded-xl border border-stone-200 object-cover shadow-sm"
+            className="aspect-video w-full rounded-xl border object-cover shadow-sm"
+            style={{ borderColor: `${TIMBER}26` }}
           />
         ) : (
-          <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 bg-stone-100 text-stone-400">
+          <div
+            className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-white"
+            style={{ borderColor: `${TIMBER}4d`, color: `${TIMBER}99` }}
+          >
             <HomeIcon className="h-8 w-8" />
             <span className="text-sm">No photo yet</span>
           </div>
@@ -198,17 +220,17 @@ export default async function PublicListingPage({
 
         <div
           className="mt-7 text-xs font-semibold tracking-wide uppercase"
-          style={{ color: ACCENT }}
+          style={{ color: BRICK }}
         >
           {property.city}, {property.state}
         </div>
         <h1
-          className="mt-2 text-4xl leading-tight font-medium text-stone-900"
-          style={{ fontFamily: "var(--font-spectral)" }}
+          className="mt-2 text-4xl leading-tight font-medium"
+          style={{ fontFamily: "var(--font-spectral)", color: CHARCOAL }}
         >
           {listing.headline || unit.name}
         </h1>
-        <p className="mt-2 text-sm text-stone-500">
+        <p className="mt-2 text-sm" style={{ color: `${TIMBER}b3` }}>
           {property.addressLine1}
           {property.addressLine2 ? `, ${property.addressLine2}` : ""}
           {unit.name !== (listing.headline || unit.name) ? ` — ${unit.name}` : ""}
@@ -218,14 +240,16 @@ export default async function PublicListingPage({
           <div className="flex items-baseline gap-3">
             {unit.rentAmountCents != null && (
               <span
-                className="text-3xl font-semibold text-stone-900"
-                style={{ fontFamily: "var(--font-spectral)" }}
+                className="text-3xl font-semibold"
+                style={{ fontFamily: "var(--font-spectral)", color: CHARCOAL }}
               >
                 ${(unit.rentAmountCents / 100).toLocaleString()}
-                <span className="text-base font-normal text-stone-500">/mo</span>
+                <span className="text-base font-normal" style={{ color: `${TIMBER}b3` }}>
+                  /mo
+                </span>
               </span>
             )}
-            <span className="text-sm text-stone-500">
+            <span className="text-sm" style={{ color: `${TIMBER}b3` }}>
               {[
                 listing.leaseTerm,
                 unit.dateAvailable
@@ -240,8 +264,8 @@ export default async function PublicListingPage({
             {mailtoHref && (
               <a
                 href={mailtoHref}
-                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-white transition-colors"
-                style={{ backgroundColor: ACCENT }}
+                className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#B08A4A]"
+                style={{ backgroundColor: BRICK }}
               >
                 <MailIcon className="h-4 w-4" />
                 Request a Showing
@@ -252,7 +276,8 @@ export default async function PublicListingPage({
                 href={listing.virtualTourUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-md border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-white"
+                className="flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-medium transition-colors hover:border-[#B08A4A] hover:text-[#B08A4A]"
+                style={{ borderColor: `${TIMBER}4d`, color: CHARCOAL }}
               >
                 <PlayIcon className="h-4 w-4" />
                 Virtual Tour
@@ -261,31 +286,56 @@ export default async function PublicListingPage({
           </div>
         </div>
 
-        <div className="mt-7 flex divide-x divide-stone-200 border-y border-stone-200 py-5">
+        <div className="mt-7 flex border-y py-5" style={{ borderColor: `${TIMBER}26` }}>
           {unit.bedrooms != null && (
-            <div className="flex items-center gap-2 pr-4 sm:gap-3 sm:pr-7">
-              <BedIcon className="h-5 w-5 shrink-0" style={{ color: ACCENT }} />
+            <div
+              className="flex items-center gap-2 border-r pr-4 sm:gap-3 sm:pr-7"
+              style={{ borderColor: `${TIMBER}26` }}
+            >
+              <BedIcon className="h-5 w-5 shrink-0" style={{ color: BRICK }} />
               <div>
-                <div className="font-semibold text-stone-900">{unit.bedrooms}</div>
-                <div className="text-xs whitespace-nowrap text-stone-500">Bedrooms</div>
+                <div className="font-semibold" style={{ color: CHARCOAL }}>
+                  {unit.bedrooms}
+                </div>
+                <div
+                  className="text-xs whitespace-nowrap"
+                  style={{ color: `${TIMBER}b3` }}
+                >
+                  Bedrooms
+                </div>
               </div>
             </div>
           )}
           {unit.bathrooms != null && (
-            <div className="flex items-center gap-2 px-4 sm:gap-3 sm:px-7">
-              <BathIcon className="h-5 w-5 shrink-0" style={{ color: ACCENT }} />
+            <div
+              className="flex items-center gap-2 border-r px-4 sm:gap-3 sm:px-7"
+              style={{ borderColor: `${TIMBER}26` }}
+            >
+              <BathIcon className="h-5 w-5 shrink-0" style={{ color: BRICK }} />
               <div>
-                <div className="font-semibold text-stone-900">{unit.bathrooms}</div>
-                <div className="text-xs whitespace-nowrap text-stone-500">Bathrooms</div>
+                <div className="font-semibold" style={{ color: CHARCOAL }}>
+                  {unit.bathrooms}
+                </div>
+                <div
+                  className="text-xs whitespace-nowrap"
+                  style={{ color: `${TIMBER}b3` }}
+                >
+                  Bathrooms
+                </div>
               </div>
             </div>
           )}
           {unit.squareFeet != null && (
             <div className="flex items-center gap-2 pl-4 sm:gap-3 sm:pl-7">
-              <RulerIcon className="h-5 w-5 shrink-0" style={{ color: ACCENT }} />
+              <RulerIcon className="h-5 w-5 shrink-0" style={{ color: BRICK }} />
               <div>
-                <div className="font-semibold text-stone-900">{unit.squareFeet}</div>
-                <div className="text-xs whitespace-nowrap text-stone-500">
+                <div className="font-semibold" style={{ color: CHARCOAL }}>
+                  {unit.squareFeet}
+                </div>
+                <div
+                  className="text-xs whitespace-nowrap"
+                  style={{ color: `${TIMBER}b3` }}
+                >
                   Square Feet
                 </div>
               </div>
@@ -298,13 +348,13 @@ export default async function PublicListingPage({
             <Eyebrow>The Story</Eyebrow>
             {listing.previewMessage && (
               <p
-                className="mt-4 text-xl leading-relaxed text-stone-800 italic"
-                style={{ fontFamily: "var(--font-spectral)" }}
+                className="mt-4 text-xl leading-relaxed italic"
+                style={{ fontFamily: "var(--font-spectral)", color: CHARCOAL }}
               >
                 {listing.previewMessage}
               </p>
             )}
-            <div className="mt-4 space-y-4 leading-relaxed text-stone-700">
+            <div className="mt-4 space-y-4 leading-relaxed" style={{ color: "#3d342c" }}>
               {storyParagraphs.map((paragraph, i) => (
                 <p key={i}>{paragraph}</p>
               ))}
@@ -320,17 +370,24 @@ export default async function PublicListingPage({
               <img
                 src={listing.floorPlanUrl}
                 alt="Floor plan"
-                className="rounded-lg border border-stone-200 shadow-sm"
+                className="rounded-lg border shadow-sm"
+                style={{ borderColor: `${TIMBER}26` }}
               />
               {unit.layoutNotes && (
-                <div className="rounded-lg border border-stone-200 bg-white p-5">
+                <div
+                  className="rounded-lg border bg-white p-5"
+                  style={{ borderColor: `${TIMBER}26` }}
+                >
                   <p
-                    className="text-base font-medium text-stone-900"
-                    style={{ fontFamily: "var(--font-spectral)" }}
+                    className="text-base font-medium"
+                    style={{ fontFamily: "var(--font-spectral)", color: CHARCOAL }}
                   >
                     Not your standard layout.
                   </p>
-                  <p className="mt-2 text-sm leading-relaxed text-stone-600">
+                  <p
+                    className="mt-2 text-sm leading-relaxed"
+                    style={{ color: "#3d342c" }}
+                  >
                     {unit.layoutNotes}
                   </p>
                 </div>
@@ -350,7 +407,8 @@ export default async function PublicListingPage({
                   {appliances.map((a) => (
                     <span
                       key={a.id}
-                      className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs text-stone-700"
+                      className="rounded-full border bg-white px-3 py-1 text-xs"
+                      style={{ borderColor: `${TIMBER}26`, color: CHARCOAL }}
                     >
                       {a.label}
                     </span>
@@ -369,9 +427,9 @@ export default async function PublicListingPage({
                       key={a.id}
                       className="rounded-full border px-3 py-1 text-xs"
                       style={{
-                        borderColor: `${ACCENT}33`,
-                        backgroundColor: `${ACCENT}0d`,
-                        color: ACCENT,
+                        borderColor: "#8F9B7A66",
+                        backgroundColor: "#8F9B7A1a",
+                        color: SAGE,
                       }}
                     >
                       {a.label}
@@ -383,23 +441,26 @@ export default async function PublicListingPage({
           </section>
         )}
 
-        <section className="mt-12 flex flex-wrap gap-x-8 gap-y-3 rounded-lg border border-stone-200 bg-white px-6 py-5 text-sm text-stone-700 shadow-sm">
+        <section
+          className="mt-12 flex flex-wrap gap-x-8 gap-y-3 rounded-lg border bg-white px-6 py-5 text-sm shadow-sm"
+          style={{ borderColor: `${TIMBER}26`, color: CHARCOAL }}
+        >
           {unit.parkingType && (
             <span className="flex items-center gap-2">
-              <CarIcon className="h-4 w-4 text-stone-400" />
+              <CarIcon className="h-4 w-4" style={{ color: `${TIMBER}99` }} />
               {PARKING_LABELS[unit.parkingType]}
             </span>
           )}
           {unit.isFurnished != null && (
             <span className="flex items-center gap-2">
-              <ArmchairIcon className="h-4 w-4 text-stone-400" />
+              <ArmchairIcon className="h-4 w-4" style={{ color: `${TIMBER}99` }} />
               {unit.isFurnished ? "Furnished" : "Unfurnished"}
             </span>
           )}
           {unit.smokingAllowed != null && (
             <span className="flex items-center gap-2">
               {!unit.smokingAllowed && (
-                <SmokeOffIcon className="h-4 w-4 text-stone-400" />
+                <SmokeOffIcon className="h-4 w-4" style={{ color: `${TIMBER}99` }} />
               )}
               {unit.smokingAllowed ? "Smoking allowed" : "No smoking"}
             </span>
@@ -409,14 +470,17 @@ export default async function PublicListingPage({
         {unit.petPolicies.length > 0 && (
           <section className="mt-12">
             <Eyebrow icon={<PawIcon className="h-3.5 w-3.5" />}>Pet Policy</Eyebrow>
-            <ul className="mt-3 space-y-1.5 text-sm text-stone-700">
+            <ul className="mt-3 space-y-1.5 text-sm" style={{ color: "#3d342c" }}>
               {unit.petPolicies.map((p) => (
                 <li key={p.id}>
                   {PET_TYPE_LABELS[p.petType]}
                   {p.petSize
                     ? ` (${p.petSize === "SMALL" ? "small" : "large"})`
                     : ""}:{" "}
-                  <span className={p.allowed ? "text-green-700" : "text-red-700"}>
+                  <span
+                    className="font-medium"
+                    style={{ color: p.allowed ? SAGE : BRICK }}
+                  >
                     {p.allowed ? "welcome" : "not allowed"}
                   </span>
                 </li>
@@ -428,16 +492,20 @@ export default async function PublicListingPage({
         {(includedUtilities.length > 0 || tenantUtilities.length > 0) && (
           <section className="mt-12">
             <Eyebrow>What&apos;s Included</Eyebrow>
-            <div className="mt-3 space-y-1.5 text-sm text-stone-700">
+            <div className="mt-3 space-y-1.5 text-sm" style={{ color: "#3d342c" }}>
               {includedUtilities.length > 0 && (
                 <div>
-                  <span className="font-medium text-stone-900">Included in rent:</span>{" "}
+                  <span className="font-medium" style={{ color: CHARCOAL }}>
+                    Included in rent:
+                  </span>{" "}
                   {includedUtilities.map((u) => UTILITY_LABELS[u.type]).join(", ")}
                 </div>
               )}
               {tenantUtilities.length > 0 && (
                 <div>
-                  <span className="font-medium text-stone-900">Tenant sets up:</span>{" "}
+                  <span className="font-medium" style={{ color: CHARCOAL }}>
+                    Tenant sets up:
+                  </span>{" "}
                   {tenantUtilities.map((u) => UTILITY_LABELS[u.type]).join(", ")}
                 </div>
               )}
@@ -448,14 +516,16 @@ export default async function PublicListingPage({
         {unit.fees.length > 0 && (
           <section className="mt-12">
             <Eyebrow>Costs &amp; Fees</Eyebrow>
-            <ul className="mt-3 space-y-1.5 text-sm text-stone-700">
+            <ul className="mt-3 space-y-1.5 text-sm" style={{ color: "#3d342c" }}>
               {unit.fees.map((f) => (
                 <li key={f.id}>
                   {FEE_TYPE_LABELS[f.type]}
                   {f.amountCents != null
                     ? ` — $${(f.amountCents / 100).toLocaleString()}`
                     : ""}{" "}
-                  <span className="text-stone-500">({FEE_TIMING_LABELS[f.timing]})</span>
+                  <span style={{ color: `${TIMBER}b3` }}>
+                    ({FEE_TIMING_LABELS[f.timing]})
+                  </span>
                   {f.description ? ` — ${f.description}` : ""}
                 </li>
               ))}
@@ -468,7 +538,7 @@ export default async function PublicListingPage({
             <Eyebrow>
               {property.city}, {property.state}
             </Eyebrow>
-            <p className="mt-4 leading-relaxed text-stone-700">
+            <p className="mt-4 leading-relaxed" style={{ color: "#3d342c" }}>
               {property.neighborhoodBlurb}
             </p>
           </section>
@@ -493,7 +563,7 @@ export default async function PublicListingPage({
 
         <section
           className="mt-12 rounded-xl px-6 py-10 text-center"
-          style={{ backgroundColor: "#1c1512" }}
+          style={{ backgroundColor: CHARCOAL }}
         >
           <h2
             className="text-2xl font-medium text-white"
@@ -504,7 +574,8 @@ export default async function PublicListingPage({
           {mailtoHref ? (
             <a
               href={mailtoHref}
-              className="mt-5 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-medium text-stone-900 hover:bg-stone-100"
+              className="mt-5 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#f7ede0]"
+              style={{ color: CHARCOAL }}
             >
               <MailIcon className="h-4 w-4" />
               Request a Showing
@@ -516,7 +587,10 @@ export default async function PublicListingPage({
           )}
         </section>
 
-        <footer className="mt-10 border-t border-stone-200 pt-6 pb-10 text-center text-xs text-stone-400">
+        <footer
+          className="mt-10 border-t pt-6 pb-10 text-center text-xs"
+          style={{ borderColor: `${TIMBER}26`, color: `${TIMBER}99` }}
+        >
           Listed by {property.landlord.name || "the property owner"} via Brick and Beam
           <br />
           Equal Housing Opportunity

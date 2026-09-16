@@ -102,6 +102,16 @@ then add properties and units from `/dashboard`.
   timing/refundability, per-utility included-vs-tenant-pays), so a future syndication export
   doesn't force a schema rewrite. Full CRUD for all four lives on the unit details page
 
+## Brand notes
+
+The public listing page (`/listings/[listingId]`) uses an "Industrial Heritage" palette —
+brick red `#9A4635`, aged timber `#6B4A34`, warm plaster `#F3E8D8`, iron charcoal `#262626`,
+weathered brass `#B08A4A` (hover states), soft sage `#5f6b52` (amenity tags) — plus the
+Spectral serif for headings, scoped to that route via `next/font/google`. This is
+deliberately **not** applied to the landlord dashboard, auth pages, or anywhere else in the
+app, which stay on plain Tailwind stone/amber — the dashboard is a utilitarian internal tool,
+the listing page is the public-facing brand moment.
+
 ## Auth notes
 
 - Credentials provider (email + password), hashed with `node:crypto` scrypt — no extra password
