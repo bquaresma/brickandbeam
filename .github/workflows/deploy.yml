@@ -1,0 +1,101 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-west-2
+  TF_VERSION: "1.9.8"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::556122828441:role/brickandbeam-github-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # Rarely changes, but applying keeps it in sync with what's committed
+      # and catches drift. Its state is what infra/app reads via remote state.
+      - name: Terraform apply (data stack)
+        working-directory: infra/data
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Get ECR repository URL
+        id: ecr
+        working-directory: infra/data
+        run: echo "url=$(terraform output -raw ecr_repository_url)" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr-login
+
+      - name: Build and push image
+        run: |
+          docker build -t "${{ steps.ecr.outputs.url }}:${{ github.sha }}" -t "${{ steps.ecr.outputs.url }}:latest" .
+          docker push "${{ steps.ecr.outputs.url }}:${{ github.sha }}"
+          docker push "${{ steps.ecr.outputs.url }}:latest"
+
+      # Registers a new task definition revision with the new image and
+      # updates the ECS service, which starts a rolling deployment.
+      - name: Terraform apply (app stack)
+        working-directory: infra/app
+        run: |
+          terraform init
+          terraform apply -auto-approve -var "image_tag=${{ github.sha }}"
+
+      - name: Get deploy outputs
+        id: app
+        working-directory: infra/app
+        run: |
+          echo "task_definition_arn=$(terraform output -raw task_definition_arn)" >> "$GITHUB_OUTPUT"
+          echo "cluster_name=$(terraform output -raw ecs_cluster_name)" >> "$GITHUB_OUTPUT"
+          echo "app_url=$(terraform output -raw app_url)" >> "$GITHUB_OUTPUT"
+
+      - name: Get network config
+        id: network
+        working-directory: infra/data
+        run: |
+          echo "subnets=$(terraform output -json public_subnet_ids | jq -r 'join(",")')" >> "$GITHUB_OUTPUT"
+          echo "security_group=$(terraform output -raw app_security_group_id)" >> "$GITHUB_OUTPUT"
+
+      # Runs against the task definition revision just registered, so it
+      # uses the migration files baked into the new image. This runs
+      # alongside the service's rolling deployment rather than strictly
+      # before it — acceptable at this traffic level (single task, low
+      # volume) but worth tightening to a hard pre-deploy gate later.
+      - name: Run database migrations
+        run: |
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "${{ steps.app.outputs.cluster_name }}" \
+            --task-definition "${{ steps.app.outputs.task_definition_arn }}" \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ steps.network.outputs.subnets }}],securityGroups=[${{ steps.network.outputs.security_group }}],assignPublicIp=ENABLED}" \
+            --overrides '{"containerOverrides":[{"name":"brickandbeam","command":["npx","prisma","migrate","deploy"]}]}' \
+            --query 'tasks[0].taskArn' --output text)
+
+          aws ecs wait tasks-stopped --cluster "${{ steps.app.outputs.cluster_name }}" --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks --cluster "${{ steps.app.outputs.cluster_name }}" --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration task failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+
+      - name: Deployed
+        run: echo "Deployed to ${{ steps.app.outputs.app_url }}"
