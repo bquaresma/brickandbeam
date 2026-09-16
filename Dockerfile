@@ -22,12 +22,20 @@ FROM node:24-bookworm-slim AS runner
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/* \
   && groupadd --system --gid 1001 nodejs \
-  && useradd --system --uid 1001 --gid nodejs nextjs
+  && useradd --system --uid 1001 --gid nodejs --create-home --home-dir /home/nextjs nextjs
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOME=/home/nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# The standalone build only bundles what the running app imports, which
+# excludes the `prisma` CLI and the schema/migrations directory — both are
+# only used by the one-off `prisma migrate deploy` task (see deploy.yml),
+# not by the app itself, so they're added explicitly here.
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
+RUN npm install --no-save prisma@$(node -p "require('./package.json').dependencies.prisma")
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
