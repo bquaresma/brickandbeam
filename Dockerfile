@@ -15,6 +15,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # injected at runtime via ECS task secrets, not baked into the image.
 ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 ENV AUTH_SECRET="build-time-placeholder"
+# NEXT_PUBLIC_* vars are inlined into the client bundle at build time, so —
+# unlike DATABASE_URL/AUTH_SECRET above — this one needs its real value
+# (a Mapbox public token, safe to expose client-side) passed as a build arg.
+ARG NEXT_PUBLIC_MAPBOX_TOKEN=""
+ENV NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN
 RUN npx prisma generate
 RUN npm run build
 

@@ -1,4 +1,5 @@
 import { FormWithError, SubmitButton } from "@/components/action-form";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import type { ActionResult } from "@/lib/actions/action-result";
 
 type PropertyFormValues = {
@@ -40,22 +41,12 @@ export function PropertyForm({
         />
       </div>
 
-      <div>
-        <label
-          htmlFor="addressLine1"
-          className="block text-sm font-medium text-stone-700"
-        >
-          Address line 1
-        </label>
-        <input
-          id="addressLine1"
-          name="addressLine1"
-          type="text"
-          required
-          defaultValue={defaultValues?.addressLine1 ?? ""}
-          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
-        />
-      </div>
+      <AddressAutocomplete
+        defaultAddressLine1={defaultValues?.addressLine1}
+        defaultCity={defaultValues?.city}
+        defaultState={defaultValues?.state}
+        defaultZip={defaultValues?.zip}
+      />
 
       <div>
         <label
@@ -71,49 +62,6 @@ export function PropertyForm({
           defaultValue={defaultValues?.addressLine2 ?? ""}
           className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-1">
-          <label htmlFor="city" className="block text-sm font-medium text-stone-700">
-            City
-          </label>
-          <input
-            id="city"
-            name="city"
-            type="text"
-            required
-            defaultValue={defaultValues?.city ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
-          />
-        </div>
-        <div>
-          <label htmlFor="state" className="block text-sm font-medium text-stone-700">
-            State
-          </label>
-          <input
-            id="state"
-            name="state"
-            type="text"
-            required
-            maxLength={2}
-            defaultValue={defaultValues?.state ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm uppercase focus:border-[#B1502F] focus:outline-none"
-          />
-        </div>
-        <div>
-          <label htmlFor="zip" className="block text-sm font-medium text-stone-700">
-            Zip
-          </label>
-          <input
-            id="zip"
-            name="zip"
-            type="text"
-            required
-            defaultValue={defaultValues?.zip ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
-          />
-        </div>
       </div>
 
       <div>

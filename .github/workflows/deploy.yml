@@ -45,7 +45,9 @@ jobs:
 
       - name: Build and push image
         run: |
-          docker build -t "${{ steps.ecr.outputs.url }}:${{ github.sha }}" -t "${{ steps.ecr.outputs.url }}:latest" .
+          docker build \
+            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN="${{ secrets.MAPBOX_TOKEN }}" \
+            -t "${{ steps.ecr.outputs.url }}:${{ github.sha }}" -t "${{ steps.ecr.outputs.url }}:latest" .
           docker push "${{ steps.ecr.outputs.url }}:${{ github.sha }}"
           docker push "${{ steps.ecr.outputs.url }}:latest"
 
