@@ -14,12 +14,12 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
+import type { ActionResult } from "@/lib/actions/action-result";
 
 async function assertOwnsUnit(propertyId: string, unitId: string, landlordId: string) {
   const unit = await prisma.unit.findFirst({
     where: { id: unitId, propertyId, property: { landlordId } },
   });
-  if (!unit) throw new Error("Unit not found.");
   return unit;
 }
 
@@ -29,13 +29,19 @@ async function revalidateUnitDetail(propertyId: string, unitId: string) {
   if (listing) revalidatePath(`/listings/${listing.id}`);
 }
 
-export async function addAmenity(propertyId: string, unitId: string, formData: FormData) {
+export async function addAmenity(
+  propertyId: string,
+  unitId: string,
+  formData: FormData,
+): Promise<ActionResult> {
   const user = await requireLandlord();
-  await assertOwnsUnit(propertyId, unitId, user.id);
+  if (!(await assertOwnsUnit(propertyId, unitId, user.id))) {
+    return { error: "Unit not found." };
+  }
 
   const label = String(formData.get("label") ?? "").trim();
   const categoryRaw = String(formData.get("category") ?? "AMENITY");
-  if (!label) throw new Error("Enter a name for the amenity or appliance.");
+  if (!label) return { error: "Enter a name for the amenity or appliance." };
 
   const category = Object.values(AmenityCategory).includes(categoryRaw as AmenityCategory)
     ? (categoryRaw as AmenityCategory)
@@ -53,7 +59,9 @@ export async function deleteAmenity(
   amenityId: string,
 ) {
   const user = await requireLandlord();
-  await assertOwnsUnit(propertyId, unitId, user.id);
+  if (!(await assertOwnsUnit(propertyId, unitId, user.id))) {
+    throw new Error("Unit not found.");
+  }
 
   const existing = await prisma.amenity.findFirst({ where: { id: amenityId, unitId } });
   if (!existing) throw new Error("Amenity not found.");
@@ -74,9 +82,11 @@ export async function setUtilities(
   propertyId: string,
   unitId: string,
   formData: FormData,
-) {
+): Promise<ActionResult> {
   const user = await requireLandlord();
-  await assertOwnsUnit(propertyId, unitId, user.id);
+  if (!(await assertOwnsUnit(propertyId, unitId, user.id))) {
+    return { error: "Unit not found." };
+  }
 
   const rows: { unitId: string; type: UtilityType; included: boolean }[] = [];
   for (const type of Object.values(UtilityType)) {
@@ -101,16 +111,18 @@ export async function addPetPolicy(
   propertyId: string,
   unitId: string,
   formData: FormData,
-) {
+): Promise<ActionResult> {
   const user = await requireLandlord();
-  await assertOwnsUnit(propertyId, unitId, user.id);
+  if (!(await assertOwnsUnit(propertyId, unitId, user.id))) {
+    return { error: "Unit not found." };
+  }
 
   const petTypeRaw = String(formData.get("petType") ?? "");
   const petSizeRaw = String(formData.get("petSize") ?? "");
   const allowed = formData.get("allowed") === "on";
 
   if (!Object.values(PetType).includes(petTypeRaw as PetType)) {
-    throw new Error("Choose a pet type.");
+    return { error: "Choose a pet type." };
   }
   const petType = petTypeRaw as PetType;
   const petSize = Object.values(PetSize).includes(petSizeRaw as PetSize)
@@ -129,7 +141,9 @@ export async function deletePetPolicy(
   petPolicyId: string,
 ) {
   const user = await requireLandlord();
-  await assertOwnsUnit(propertyId, unitId, user.id);
+  if (!(await assertOwnsUnit(propertyId, unitId, user.id))) {
+    throw new Error("Unit not found.");
+  }
 
   const existing = await prisma.petPolicy.findFirst({
     where: { id: petPolicyId, unitId },
@@ -142,9 +156,15 @@ export async function deletePetPolicy(
   redirect(`/dashboard/properties/${propertyId}/units/${unitId}/details`);
 }
 
-export async function addFee(propertyId: string, unitId: string, formData: FormData) {
+export async function addFee(
+  propertyId: string,
+  unitId: string,
+  formData: FormData,
+): Promise<ActionResult> {
   const user = await requireLandlord();
-  await assertOwnsUnit(propertyId, unitId, user.id);
+  if (!(await assertOwnsUnit(propertyId, unitId, user.id))) {
+    return { error: "Unit not found." };
+  }
 
   const typeRaw = String(formData.get("type") ?? "");
   const timingRaw = String(formData.get("timing") ?? "");
@@ -153,10 +173,10 @@ export async function addFee(propertyId: string, unitId: string, formData: FormD
   const description = String(formData.get("description") ?? "").trim();
 
   if (!Object.values(FeeType).includes(typeRaw as FeeType)) {
-    throw new Error("Choose a fee type.");
+    return { error: "Choose a fee type." };
   }
   if (!Object.values(FeeTiming).includes(timingRaw as FeeTiming)) {
-    throw new Error("Choose when this fee applies.");
+    return { error: "Choose when this fee applies." };
   }
 
   const amountDollars = amountDollarsRaw ? Number.parseFloat(amountDollarsRaw) : null;
@@ -186,7 +206,9 @@ export async function addFee(propertyId: string, unitId: string, formData: FormD
 
 export async function deleteFee(propertyId: string, unitId: string, feeId: string) {
   const user = await requireLandlord();
-  await assertOwnsUnit(propertyId, unitId, user.id);
+  if (!(await assertOwnsUnit(propertyId, unitId, user.id))) {
+    throw new Error("Unit not found.");
+  }
 
   const existing = await prisma.fee.findFirst({ where: { id: feeId, unitId } });
   if (!existing) throw new Error("Fee not found.");

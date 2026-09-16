@@ -5,8 +5,22 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
+import type { ActionResult } from "@/lib/actions/action-result";
 
-function parsePropertyForm(formData: FormData) {
+type PropertyData = {
+  name: string | null;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  zip: string;
+  buildYear: number;
+  neighborhoodBlurb: string | null;
+};
+
+function parsePropertyForm(
+  formData: FormData,
+): { error: string } | { data: PropertyData } {
   const name = String(formData.get("name") ?? "").trim();
   const addressLine1 = String(formData.get("addressLine1") ?? "").trim();
   const addressLine2 = String(formData.get("addressLine2") ?? "").trim();
@@ -18,50 +32,57 @@ function parsePropertyForm(formData: FormData) {
   const neighborhoodBlurb = String(formData.get("neighborhoodBlurb") ?? "").trim();
 
   if (!addressLine1 || !city || !state || !zip) {
-    throw new Error("Address, city, state, and zip are required.");
+    return { error: "Address, city, state, and zip are required." };
   }
   if (
     !Number.isInteger(buildYear) ||
     buildYear < 1600 ||
     buildYear > new Date().getFullYear()
   ) {
-    throw new Error("Enter a valid build year.");
+    return { error: "Enter a valid build year." };
   }
 
   return {
-    name: name || null,
-    addressLine1,
-    addressLine2: addressLine2 || null,
-    city,
-    state,
-    zip,
-    buildYear,
-    neighborhoodBlurb: neighborhoodBlurb || null,
+    data: {
+      name: name || null,
+      addressLine1,
+      addressLine2: addressLine2 || null,
+      city,
+      state,
+      zip,
+      buildYear,
+      neighborhoodBlurb: neighborhoodBlurb || null,
+    },
   };
 }
 
-export async function createProperty(formData: FormData) {
+export async function createProperty(formData: FormData): Promise<ActionResult> {
   const user = await requireLandlord();
-  const data = parsePropertyForm(formData);
+  const parsed = parsePropertyForm(formData);
+  if ("error" in parsed) return parsed;
 
   const property = await prisma.property.create({
-    data: { ...data, landlordId: user.id },
+    data: { ...parsed.data, landlordId: user.id },
   });
 
   revalidatePath("/dashboard");
   redirect(`/dashboard/properties/${property.id}`);
 }
 
-export async function updateProperty(propertyId: string, formData: FormData) {
+export async function updateProperty(
+  propertyId: string,
+  formData: FormData,
+): Promise<ActionResult> {
   const user = await requireLandlord();
-  const data = parsePropertyForm(formData);
+  const parsed = parsePropertyForm(formData);
+  if ("error" in parsed) return parsed;
 
   const existing = await prisma.property.findFirst({
     where: { id: propertyId, landlordId: user.id },
   });
-  if (!existing) throw new Error("Property not found.");
+  if (!existing) return { error: "Property not found." };
 
-  await prisma.property.update({ where: { id: propertyId }, data });
+  await prisma.property.update({ where: { id: propertyId }, data: parsed.data });
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/properties/${propertyId}`);

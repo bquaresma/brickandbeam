@@ -5,6 +5,7 @@ import { Spectral } from "next/font/google";
 import { prisma } from "@/lib/prisma";
 import { requiresLeadPaintDisclosure } from "@/lib/compliance";
 import { createLead } from "@/lib/actions/leads";
+import { FormWithError, SubmitButton } from "@/components/action-form";
 import {
   BedIcon,
   BathIcon,
@@ -594,9 +595,10 @@ export default async function PublicListingPage({
                 up directly.
               </p>
 
-              <form
+              <FormWithError
                 action={createLead.bind(null, listing.id)}
                 className="mx-auto mt-6 flex max-w-md flex-col gap-3"
+                errorClassName="mt-1 text-sm text-red-400"
               >
                 <input
                   type="text"
@@ -628,14 +630,14 @@ export default async function PublicListingPage({
                   className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
                   style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}
                 />
-                <button
-                  type="submit"
-                  className="rounded-md bg-white px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#f7ede0]"
+                <SubmitButton
+                  pendingLabel="Sending…"
+                  className="rounded-md bg-white px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[#f7ede0] disabled:opacity-50"
                   style={{ color: CHARCOAL }}
                 >
                   Send Request
-                </button>
-              </form>
+                </SubmitButton>
+              </FormWithError>
 
               {mailtoHref && (
                 <p className="mt-4 text-center text-xs" style={{ color: `${PLASTER}80` }}>

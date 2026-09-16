@@ -1,3 +1,6 @@
+import { FormWithError, SubmitButton } from "@/components/action-form";
+import type { ActionResult } from "@/lib/actions/action-result";
+
 type UnitFormValues = {
   name?: string;
   rentAmountCents?: number | null;
@@ -27,7 +30,7 @@ export function UnitForm({
   defaultValues,
   submitLabel,
 }: {
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) => Promise<ActionResult>;
   defaultValues?: UnitFormValues;
   submitLabel: string;
 }) {
@@ -38,7 +41,7 @@ export function UnitForm({
     : "";
 
   return (
-    <form
+    <FormWithError
       action={action}
       className="space-y-4 rounded-lg border border-stone-200 bg-white p-6"
     >
@@ -195,12 +198,12 @@ export function UnitForm({
         </label>
       </div>
 
-      <button
-        type="submit"
-        className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
+      <SubmitButton
+        pendingLabel="Saving…"
+        className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25] disabled:opacity-50"
       >
         {submitLabel}
-      </button>
-    </form>
+      </SubmitButton>
+    </FormWithError>
   );
 }

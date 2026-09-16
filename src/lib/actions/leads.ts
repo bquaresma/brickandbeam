@@ -6,12 +6,16 @@ import { LeadStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
+import type { ActionResult } from "@/lib/actions/action-result";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Public — submitted by an unauthenticated prospective renter from a
 // listing page, so this intentionally does not call requireLandlord().
-export async function createLead(listingId: string, formData: FormData) {
+export async function createLead(
+  listingId: string,
+  formData: FormData,
+): Promise<ActionResult> {
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "")
     .trim()
@@ -19,12 +23,12 @@ export async function createLead(listingId: string, formData: FormData) {
   const phone = String(formData.get("phone") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();
 
-  if (!name) throw new Error("Enter your name.");
-  if (!EMAIL_RE.test(email)) throw new Error("Enter a valid email address.");
+  if (!name) return { error: "Enter your name." };
+  if (!EMAIL_RE.test(email)) return { error: "Enter a valid email address." };
 
   const listing = await prisma.listing.findUnique({ where: { id: listingId } });
   if (!listing || listing.status !== "PUBLISHED") {
-    throw new Error("This listing is no longer accepting inquiries.");
+    return { error: "This listing is no longer accepting inquiries." };
   }
 
   await prisma.lead.create({

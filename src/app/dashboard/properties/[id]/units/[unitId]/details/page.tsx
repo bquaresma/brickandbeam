@@ -12,6 +12,7 @@ import {
   addFee,
   deleteFee,
 } from "@/lib/actions/unit-details";
+import { FormWithError, SubmitButton } from "@/components/action-form";
 
 const UTILITY_LABELS: Record<UtilityType, string> = {
   WATER: "Water",
@@ -151,9 +152,9 @@ export default async function UnitDetailsPage({
             </div>
           </div>
 
-          <form
+          <FormWithError
             action={addAmenity.bind(null, id, unitId)}
-            className="mt-5 flex items-end gap-3 border-t border-stone-200 pt-5"
+            className="mt-5 flex flex-wrap items-end gap-3 border-t border-stone-200 pt-5"
           >
             <div className="flex-1">
               <label htmlFor="label" className="block text-xs font-medium text-stone-600">
@@ -184,19 +185,19 @@ export default async function UnitDetailsPage({
                 <option value="APPLIANCE">Appliance</option>
               </select>
             </div>
-            <button
-              type="submit"
-              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
+            <SubmitButton
+              pendingLabel="Adding…"
+              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25] disabled:opacity-50"
             >
               Add
-            </button>
-          </form>
+            </SubmitButton>
+          </FormWithError>
         </div>
       </section>
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-[#3D2E24]">Utilities</h2>
-        <form
+        <FormWithError
           action={setUtilities.bind(null, id, unitId)}
           className="rounded-lg border border-stone-200 bg-white p-6"
         >
@@ -223,13 +224,13 @@ export default async function UnitDetailsPage({
               );
             })}
           </div>
-          <button
-            type="submit"
-            className="mt-5 rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
+          <SubmitButton
+            pendingLabel="Saving…"
+            className="mt-5 rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25] disabled:opacity-50"
           >
             Save utilities
-          </button>
-        </form>
+          </SubmitButton>
+        </FormWithError>
       </section>
 
       <section className="space-y-4">
@@ -266,9 +267,9 @@ export default async function UnitDetailsPage({
             </ul>
           )}
 
-          <form
+          <FormWithError
             action={addPetPolicy.bind(null, id, unitId)}
-            className="mt-5 flex items-end gap-3 border-t border-stone-200 pt-5"
+            className="mt-5 flex flex-wrap items-end gap-3 border-t border-stone-200 pt-5"
           >
             <div>
               <label
@@ -315,13 +316,13 @@ export default async function UnitDetailsPage({
               />
               Allowed
             </label>
-            <button
-              type="submit"
-              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
+            <SubmitButton
+              pendingLabel="Adding…"
+              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25] disabled:opacity-50"
             >
               Add
-            </button>
-          </form>
+            </SubmitButton>
+          </FormWithError>
         </div>
       </section>
 
@@ -361,7 +362,7 @@ export default async function UnitDetailsPage({
             </ul>
           )}
 
-          <form
+          <FormWithError
             action={addFee.bind(null, id, unitId)}
             className="mt-5 flex flex-wrap items-end gap-3 border-t border-stone-200 pt-5"
           >
@@ -448,13 +449,13 @@ export default async function UnitDetailsPage({
                 className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               />
             </div>
-            <button
-              type="submit"
-              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
+            <SubmitButton
+              pendingLabel="Adding…"
+              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25] disabled:opacity-50"
             >
               Add
-            </button>
-          </form>
+            </SubmitButton>
+          </FormWithError>
         </div>
       </section>
     </div>
