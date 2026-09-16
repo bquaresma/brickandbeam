@@ -15,6 +15,15 @@ step isn't Terraform itself. Already created for this account:
   AWS keys in GitHub). Permissions are scoped to what Terraform needs for this project — see the role's
   inline policy for specifics.
 
+  **Gotcha hit while setting this up:** AWS requires a GitHub OIDC trust policy to condition on
+  `token.actions.githubusercontent.com:sub` (or `:job_workflow_ref`) specifically — conditioning on the
+  separate `:repository`/`:ref` claims instead is rejected outright ("must evaluate ... which is not scoped
+  to all"). And the `sub` claim itself isn't the plain `repo:owner/repo:ref:refs/heads/branch` string you'd
+  expect from GitHub's docs — this account's tokens include immutable owner/repo IDs:
+  `repo:bquaresma@9562307/brickandbeam@1372212139:ref:refs/heads/main`. Confirm the real value via CloudTrail
+  (Event history, region = whatever `aws-region` the workflow uses, event name `AssumeRoleWithWebIdentity`)
+  rather than assuming the docs' format — the "User name" column on a failed attempt shows the exact string.
+
 If this ever needs to be redone (new AWS account, disaster recovery), redo these same steps by hand — there's
 no script for it, and re-creating them is rare enough that a script isn't worth maintaining.
 
