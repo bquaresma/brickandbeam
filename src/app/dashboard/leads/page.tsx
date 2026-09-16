@@ -27,7 +27,7 @@ export default async function LeadsInboxPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">Leads</h1>
+      <h1 className="text-2xl font-semibold text-[#3D2E24]">Leads</h1>
       <p className="mt-1 text-sm text-stone-500">
         Inquiries from all of your published listings, newest first.
       </p>

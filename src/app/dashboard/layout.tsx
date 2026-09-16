@@ -16,16 +16,16 @@ export default async function DashboardLayout({
   });
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <header className="border-b border-stone-200 bg-white">
+    <div className="min-h-screen bg-[#FBF0E1]">
+      <header className="border-b border-[#e7d9c3] bg-white">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="font-semibold text-stone-900">
+            <Link href="/dashboard" className="font-semibold text-[#3D2E24]">
               Brick and Beam
             </Link>
             <Link
               href="/dashboard/leads"
-              className="flex items-center gap-1.5 text-sm font-medium text-stone-600 hover:text-stone-900"
+              className="flex items-center gap-1.5 text-sm font-medium text-stone-600 hover:text-[#B1502F]"
             >
               Leads
               {newLeadCount > 0 && (
@@ -43,7 +43,7 @@ export default async function DashboardLayout({
                 await signOut({ redirectTo: "/login" });
               }}
             >
-              <button type="submit" className="underline hover:text-stone-900">
+              <button type="submit" className="underline hover:text-[#B1502F]">
                 Sign out
               </button>
             </form>

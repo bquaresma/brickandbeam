@@ -37,7 +37,7 @@ export default async function PropertyDetailPage({
     <div>
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-stone-900">
+          <h1 className="text-2xl font-semibold text-[#3D2E24]">
             {property.name || property.addressLine1}
           </h1>
           <p className="text-sm text-stone-500">
@@ -73,10 +73,10 @@ export default async function PropertyDetailPage({
       )}
 
       <div className="mt-8 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-stone-900">Units</h2>
+        <h2 className="text-lg font-semibold text-[#3D2E24]">Units</h2>
         <Link
           href={`/dashboard/properties/${property.id}/units/new`}
-          className="rounded-md bg-stone-900 px-3 py-2 text-sm font-medium text-white hover:bg-stone-800"
+          className="rounded-md bg-[#B1502F] px-3 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
         >
           + Add unit
         </Link>

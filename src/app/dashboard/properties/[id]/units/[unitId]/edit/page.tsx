@@ -25,7 +25,7 @@ export default async function EditUnitPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">Edit {unit.name}</h1>
+      <h1 className="text-2xl font-semibold text-[#3D2E24]">Edit {unit.name}</h1>
       <div className="mt-6">
         <UnitForm
           action={updateUnit.bind(null, property.id, unit.id)}

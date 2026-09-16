@@ -33,7 +33,7 @@ export function ListingForm({
           type="text"
           placeholder="A sun-filled attic retreat above a Lawrenceville rowhouse"
           defaultValue={defaultValues?.headline ?? ""}
-          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
       </div>
 
@@ -51,7 +51,7 @@ export function ListingForm({
           maxLength={255}
           placeholder="A short teaser shown in search results — separate from the full story below"
           defaultValue={defaultValues?.previewMessage ?? ""}
-          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
       </div>
 
@@ -66,7 +66,7 @@ export function ListingForm({
           rows={8}
           placeholder="Tell renters what makes this place different — the character details a bed/bath grid can't capture."
           defaultValue={defaultValues?.story ?? ""}
-          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
         <p className="mt-1 text-xs text-stone-500">
           This narrative is the centerpiece of the listing — not an afterthought below a
@@ -85,7 +85,7 @@ export function ListingForm({
             type="text"
             placeholder="12 Months, Month-to-month…"
             defaultValue={defaultValues?.leaseTerm ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
         <div>
@@ -101,7 +101,7 @@ export function ListingForm({
             type="url"
             placeholder="https://…"
             defaultValue={defaultValues?.virtualTourUrl ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
       </div>
@@ -120,7 +120,7 @@ export function ListingForm({
             type="url"
             placeholder="https://…"
             defaultValue={defaultValues?.heroPhotoUrl ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
         <div>
@@ -136,7 +136,7 @@ export function ListingForm({
             type="url"
             placeholder="https://…"
             defaultValue={defaultValues?.floorPlanUrl ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
       </div>
@@ -152,7 +152,7 @@ export function ListingForm({
           id="status"
           name="status"
           defaultValue={defaultValues?.status ?? "DRAFT"}
-          className="mt-1 block w-48 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          className="mt-1 block w-48 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         >
           <option value="DRAFT">Draft</option>
           <option value="PUBLISHED">Published</option>
@@ -166,7 +166,7 @@ export function ListingForm({
 
       <button
         type="submit"
-        className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+        className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
       >
         {submitLabel}
       </button>

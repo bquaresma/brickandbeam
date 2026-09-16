@@ -16,10 +16,10 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-stone-900">Your properties</h1>
+        <h1 className="text-2xl font-semibold text-[#3D2E24]">Your properties</h1>
         <Link
           href="/dashboard/properties/new"
-          className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+          className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
         >
           + Add property
         </Link>

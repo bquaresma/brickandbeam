@@ -53,7 +53,7 @@ export function UnitForm({
           required
           placeholder="Carriage House, Attic Suite, Unit A…"
           defaultValue={defaultValues?.name ?? ""}
-          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
       </div>
 
@@ -72,7 +72,7 @@ export function UnitForm({
             min={0}
             step="0.01"
             defaultValue={rentDollars}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
         <div>
@@ -86,7 +86,7 @@ export function UnitForm({
             min={0}
             step="0.5"
             defaultValue={defaultValues?.bedrooms ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
         <div>
@@ -100,7 +100,7 @@ export function UnitForm({
             min={0}
             step="0.5"
             defaultValue={defaultValues?.bathrooms ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
       </div>
@@ -115,7 +115,7 @@ export function UnitForm({
           type="number"
           min={0}
           defaultValue={defaultValues?.squareFeet ?? ""}
-          className="mt-1 block w-40 rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          className="mt-1 block w-40 rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
       </div>
 
@@ -129,7 +129,7 @@ export function UnitForm({
           rows={3}
           placeholder="Converted attic with a non-conforming bedroom, exposed brick in the living area…"
           defaultValue={defaultValues?.layoutNotes ?? ""}
-          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
         <p className="mt-1 text-xs text-stone-500">
           Use this for anything that doesn&apos;t fit a standard bed/bath grid.
@@ -149,7 +149,7 @@ export function UnitForm({
             name="dateAvailable"
             type="date"
             defaultValue={dateAvailable}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
         <div>
@@ -163,7 +163,7 @@ export function UnitForm({
             id="parkingType"
             name="parkingType"
             defaultValue={defaultValues?.parkingType ?? ""}
-            className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           >
             {PARKING_TYPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -197,7 +197,7 @@ export function UnitForm({
 
       <button
         type="submit"
-        className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+        className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
       >
         {submitLabel}
       </button>

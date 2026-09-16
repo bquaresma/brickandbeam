@@ -22,7 +22,7 @@ export default async function NewListingPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">
+      <h1 className="text-2xl font-semibold text-[#3D2E24]">
         Add a listing for {unit.name}
       </h1>
       <div className="mt-6">

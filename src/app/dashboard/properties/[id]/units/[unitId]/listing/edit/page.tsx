@@ -21,7 +21,7 @@ export default async function EditListingPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">
+      <h1 className="text-2xl font-semibold text-[#3D2E24]">
         Edit listing for {unit.name}
       </h1>
       <div className="mt-6">

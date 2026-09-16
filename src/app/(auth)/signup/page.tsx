@@ -51,8 +51,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-      <h1 className="text-xl font-semibold text-stone-900">
+    <div className="rounded-lg border border-[#e7d9c3] bg-white p-8 shadow-sm">
+      <h1 className="text-xl font-semibold text-[#3D2E24]">
         Create your landlord account
       </h1>
       <p className="mt-1 text-sm text-stone-500">
@@ -69,7 +69,7 @@ export default function SignupPage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
 
@@ -83,7 +83,7 @@ export default function SignupPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
 
@@ -98,7 +98,7 @@ export default function SignupPage() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+            className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
           />
         </div>
 
@@ -107,7 +107,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50"
+          className="w-full rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25] disabled:opacity-50"
         >
           {isSubmitting ? "Creating account…" : "Create account"}
         </button>
@@ -115,7 +115,7 @@ export default function SignupPage() {
 
       <p className="mt-4 text-center text-sm text-stone-500">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-stone-900 underline">
+        <Link href="/login" className="font-medium text-[#B1502F] underline">
           Sign in
         </Link>
       </p>

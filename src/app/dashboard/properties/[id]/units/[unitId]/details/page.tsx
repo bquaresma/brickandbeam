@@ -83,7 +83,7 @@ export default async function UnitDetailsPage({
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-semibold text-stone-900">
+        <h1 className="text-2xl font-semibold text-[#3D2E24]">
           Amenities &amp; utilities for {unit.name}
         </h1>
         <p className="mt-1 text-sm text-stone-500">
@@ -92,7 +92,7 @@ export default async function UnitDetailsPage({
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-stone-900">
+        <h2 className="text-lg font-semibold text-[#3D2E24]">
           Appliances &amp; amenities
         </h2>
 
@@ -165,7 +165,7 @@ export default async function UnitDetailsPage({
                 type="text"
                 required
                 placeholder="Dishwasher, Exposed brick, In-unit laundry…"
-                className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               />
             </div>
             <div>
@@ -178,7 +178,7 @@ export default async function UnitDetailsPage({
               <select
                 id="category"
                 name="category"
-                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               >
                 <option value="AMENITY">Amenity</option>
                 <option value="APPLIANCE">Appliance</option>
@@ -186,7 +186,7 @@ export default async function UnitDetailsPage({
             </div>
             <button
               type="submit"
-              className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
             >
               Add
             </button>
@@ -195,7 +195,7 @@ export default async function UnitDetailsPage({
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-stone-900">Utilities</h2>
+        <h2 className="text-lg font-semibold text-[#3D2E24]">Utilities</h2>
         <form
           action={setUtilities.bind(null, id, unitId)}
           className="rounded-lg border border-stone-200 bg-white p-6"
@@ -213,7 +213,7 @@ export default async function UnitDetailsPage({
                   <select
                     name={`utility_${type}`}
                     defaultValue={current}
-                    className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm focus:border-stone-500 focus:outline-none"
+                    className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm focus:border-[#B1502F] focus:outline-none"
                   >
                     <option value="NA">Not applicable</option>
                     <option value="INCLUDED">Included in rent</option>
@@ -225,7 +225,7 @@ export default async function UnitDetailsPage({
           </div>
           <button
             type="submit"
-            className="mt-5 rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+            className="mt-5 rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
           >
             Save utilities
           </button>
@@ -233,7 +233,7 @@ export default async function UnitDetailsPage({
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-stone-900">Pet policy</h2>
+        <h2 className="text-lg font-semibold text-[#3D2E24]">Pet policy</h2>
         <div className="rounded-lg border border-stone-200 bg-white p-6">
           {unit.petPolicies.length === 0 ? (
             <p className="text-sm text-stone-400">No pet policy added yet.</p>
@@ -280,7 +280,7 @@ export default async function UnitDetailsPage({
               <select
                 id="petType"
                 name="petType"
-                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               >
                 {Object.values(PetType).map((t) => (
                   <option key={t} value={t}>
@@ -299,7 +299,7 @@ export default async function UnitDetailsPage({
               <select
                 id="petSize"
                 name="petSize"
-                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               >
                 <option value="">Any</option>
                 <option value="SMALL">Small</option>
@@ -317,7 +317,7 @@ export default async function UnitDetailsPage({
             </label>
             <button
               type="submit"
-              className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
             >
               Add
             </button>
@@ -326,7 +326,7 @@ export default async function UnitDetailsPage({
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-stone-900">Costs &amp; fees</h2>
+        <h2 className="text-lg font-semibold text-[#3D2E24]">Costs &amp; fees</h2>
         <div className="rounded-lg border border-stone-200 bg-white p-6">
           {unit.fees.length === 0 ? (
             <p className="text-sm text-stone-400">No fees added yet.</p>
@@ -372,7 +372,7 @@ export default async function UnitDetailsPage({
               <select
                 id="type"
                 name="type"
-                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               >
                 {Object.values(FeeType).map((t) => (
                   <option key={t} value={t}>
@@ -394,7 +394,7 @@ export default async function UnitDetailsPage({
                 type="number"
                 min={0}
                 step="0.01"
-                className="mt-1 block w-28 rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block w-28 rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               />
             </div>
             <div>
@@ -407,7 +407,7 @@ export default async function UnitDetailsPage({
               <select
                 id="timing"
                 name="timing"
-                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               >
                 {Object.values(FeeTiming).map((t) => (
                   <option key={t} value={t}>
@@ -426,7 +426,7 @@ export default async function UnitDetailsPage({
               <select
                 id="requirement"
                 name="requirement"
-                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block rounded-md border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               >
                 <option value="MANDATORY">Mandatory</option>
                 <option value="OPTIONAL">Optional</option>
@@ -445,12 +445,12 @@ export default async function UnitDetailsPage({
                 name="description"
                 type="text"
                 placeholder="Refundable, per pet, etc."
-                className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none"
+                className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
               />
             </div>
             <button
               type="submit"
-              className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+              className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
             >
               Add
             </button>

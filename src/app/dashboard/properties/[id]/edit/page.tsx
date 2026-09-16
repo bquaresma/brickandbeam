@@ -21,7 +21,7 @@ export default async function EditPropertyPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-stone-900">Edit property</h1>
+      <h1 className="text-2xl font-semibold text-[#3D2E24]">Edit property</h1>
       <div className="mt-6">
         <PropertyForm
           action={updateProperty.bind(null, property.id)}
