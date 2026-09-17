@@ -96,13 +96,14 @@ export function PropertyForm({
           id="alleyAddress"
           name="alleyAddress"
           type="text"
-          placeholder="Rear address or nearest cross street, e.g. 'Onyx Way behind the property'"
+          placeholder="Nearest cross street, e.g. 'Onyx Way behind the property' — or paste coordinates like 40.4595, -79.9573"
           defaultValue={defaultValues?.alleyAddress ?? ""}
           className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
         <p className="mt-1 text-xs text-stone-500">
-          If this property backs onto an alley or service street, adding it here adds a
-          second Street View link on the public listing.
+          If this property backs onto an alley or service street, adding it here (as a
+          description or exact coordinates) adds a second Street View link on the public
+          listing.
         </p>
         <div className="mt-2">
           <StreetViewPreviewButton

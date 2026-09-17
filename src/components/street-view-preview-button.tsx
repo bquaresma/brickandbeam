@@ -3,10 +3,26 @@
 import { useState } from "react";
 
 import { PanoramaIcon } from "@/components/listing-icons";
+import { parseLatLng } from "@/lib/geocode";
+
+function openStreetView(
+  preview: Window | null,
+  { lat, lng }: { lat: number; lng: number },
+) {
+  const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+  if (preview) {
+    preview.location.href = streetViewUrl;
+  } else {
+    // Popup blocked even on the synchronous open (strict blocker settings)
+    // — fall back to this tab so the check isn't a dead end.
+    window.location.href = streetViewUrl;
+  }
+}
 
 // Lets a landlord confirm a Street View actually lands on the right spot
 // before publishing — reads the current value of the given form fields at
-// click time (works whether they're controlled or plain inputs), geocodes
+// click time (works whether they're controlled or plain inputs), accepts
+// either a free-text address or a pasted "lat,lng" pair, geocodes text
 // client-side with the same Mapbox token as the address autocomplete, and
 // opens Google's Street View pano in a new tab.
 export function StreetViewPreviewButton({
@@ -28,6 +44,15 @@ export function StreetViewPreviewButton({
 
     if (!address) {
       setStatus("empty");
+      return;
+    }
+
+    const direct = parseLatLng(address);
+    if (direct) {
+      // Same-tick open — see the note below for why this matters.
+      const preview = window.open("about:blank", "_blank");
+      openStreetView(preview, direct);
+      setStatus("idle");
       return;
     }
 
@@ -61,15 +86,7 @@ export function StreetViewPreviewButton({
         return;
       }
       const [lng, lat] = coords;
-      const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
-
-      if (preview) {
-        preview.location.href = streetViewUrl;
-      } else {
-        // Popup blocked even on the synchronous open (strict blocker
-        // settings) — fall back to this tab so the check isn't a dead end.
-        window.location.href = streetViewUrl;
-      }
+      openStreetView(preview, { lat, lng });
       setStatus("idle");
     } catch {
       preview?.close();
