@@ -5,6 +5,7 @@ import { Spectral } from "next/font/google";
 import { prisma } from "@/lib/prisma";
 import { requiresLeadPaintDisclosure } from "@/lib/compliance";
 import { createLead } from "@/lib/actions/leads";
+import { geocodeAddress, type GeocodeResult } from "@/lib/geocode";
 import { FormWithError, SubmitButton } from "@/components/action-form";
 import {
   BedIcon,
@@ -19,6 +20,8 @@ import {
   PlayIcon,
   SparkleIcon,
   HomeIcon,
+  MapPinIcon,
+  PanoramaIcon,
 } from "@/components/listing-icons";
 
 const spectral = Spectral({
@@ -41,6 +44,17 @@ const SAGE = "#5f6b52"; // secondary accent (amenities, "allowed" states) — da
 // Subtle plaster-grain texture, layered under the flat background color.
 const GRAIN_BG =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E\")";
+
+// Plain Google Maps URLs — no API key needed, since these just deep-link
+// out to Google Maps rather than embedding a map or panorama in the page.
+// The map search accepts a free-text address; the Street View "pano" action
+// silently ignores one and needs real coordinates (see geocodeAddress).
+function mapsSearchUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+function streetViewUrl({ lat, lng }: GeocodeResult) {
+  return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+}
 
 const PARKING_LABELS: Record<string, string> = {
   GARAGE_ATTACHED: "Attached garage",
@@ -165,6 +179,12 @@ export default async function PublicListingPage({
   const { property } = unit;
   const leadPaintGate = requiresLeadPaintDisclosure(property.buildYear);
 
+  const fullAddress = `${property.addressLine1}, ${property.city}, ${property.state} ${property.zip}`;
+  const [frontGeo, alleyGeo] = await Promise.all([
+    geocodeAddress(fullAddress),
+    property.alleyAddress ? geocodeAddress(property.alleyAddress) : Promise.resolve(null),
+  ]);
+
   const appliances = unit.amenities.filter((a) => a.category === "APPLIANCE");
   const amenities = unit.amenities.filter((a) => a.category === "AMENITY");
   const includedUtilities = unit.utilities.filter((u) => u.included);
@@ -240,6 +260,43 @@ export default async function PublicListingPage({
           {property.addressLine2 ? `, ${property.addressLine2}` : ""}
           {unit.name !== (listing.headline || unit.name) ? ` — ${unit.name}` : ""}
         </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <a
+            href={mapsSearchUrl(fullAddress)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs font-medium hover:underline"
+            style={{ color: BRICK }}
+          >
+            <MapPinIcon className="h-4 w-4" />
+            View on map
+          </a>
+          {frontGeo && (
+            <a
+              href={streetViewUrl(frontGeo)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-medium hover:underline"
+              style={{ color: BRICK }}
+            >
+              <PanoramaIcon className="h-4 w-4" />
+              Street View — front
+            </a>
+          )}
+          {alleyGeo && (
+            <a
+              href={streetViewUrl(alleyGeo)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-medium hover:underline"
+              style={{ color: BRICK }}
+            >
+              <PanoramaIcon className="h-4 w-4" />
+              Street View — alley
+            </a>
+          )}
+        </div>
 
         <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-baseline gap-3">

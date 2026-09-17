@@ -14,6 +14,7 @@ type PropertyData = {
   city: string;
   state: string;
   zip: string;
+  alleyAddress: string | null;
   buildYear: number;
   neighborhoodBlurb: string | null;
 };
@@ -27,6 +28,7 @@ function parsePropertyForm(
   const city = String(formData.get("city") ?? "").trim();
   const state = String(formData.get("state") ?? "").trim();
   const zip = String(formData.get("zip") ?? "").trim();
+  const alleyAddress = String(formData.get("alleyAddress") ?? "").trim();
   const buildYearRaw = String(formData.get("buildYear") ?? "").trim();
   const buildYear = Number.parseInt(buildYearRaw, 10);
   const neighborhoodBlurb = String(formData.get("neighborhoodBlurb") ?? "").trim();
@@ -50,6 +52,7 @@ function parsePropertyForm(
       city,
       state,
       zip,
+      alleyAddress: alleyAddress || null,
       buildYear,
       neighborhoodBlurb: neighborhoodBlurb || null,
     },

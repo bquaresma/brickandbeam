@@ -9,6 +9,7 @@ type PropertyFormValues = {
   city?: string;
   state?: string;
   zip?: string;
+  alleyAddress?: string | null;
   buildYear?: number;
   neighborhoodBlurb?: string | null;
 };
@@ -62,6 +63,27 @@ export function PropertyForm({
           defaultValue={defaultValues?.addressLine2 ?? ""}
           className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
+      </div>
+
+      <div>
+        <label
+          htmlFor="alleyAddress"
+          className="block text-sm font-medium text-stone-700"
+        >
+          Alley / back street (optional)
+        </label>
+        <input
+          id="alleyAddress"
+          name="alleyAddress"
+          type="text"
+          placeholder="Rear address or nearest cross street, e.g. 'Onyx Way behind the property'"
+          defaultValue={defaultValues?.alleyAddress ?? ""}
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-stone-500">
+          If this property backs onto an alley or service street, adding it here adds a
+          second Street View link on the public listing.
+        </p>
       </div>
 
       <div>

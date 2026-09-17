@@ -101,6 +101,12 @@ model Property {
   state        String
   zip          String
 
+  // Cross street or address for a rear alley/service street, if this
+  // property has one — landlord-entered since there's no reliable way to
+  // detect it automatically. Powers a second "alley" Street View link on
+  // the public listing, alongside the front-address one.
+  alleyAddress String?
+
   // Drives the lead-paint disclosure gate: any property with buildYear < 1978
   // requires the Title X disclosure workflow before a lease is signed.
   buildYear Int

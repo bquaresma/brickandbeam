@@ -143,3 +143,22 @@ export function HomeIcon({ className, style }: IconProps) {
     </svg>
   );
 }
+
+export function MapPinIcon({ className, style }: IconProps) {
+  return (
+    <svg {...base} className={className} style={style}>
+      <path d="M10 18s6-5.5 6-10.2A6 6 0 0 0 4 7.8C4 12.5 10 18 10 18Z" />
+      <circle cx="10" cy="7.8" r="2.2" />
+    </svg>
+  );
+}
+
+export function PanoramaIcon({ className, style }: IconProps) {
+  return (
+    <svg {...base} className={className} style={style}>
+      <path d="M2.5 8c2.3-1.3 4.9-2 7.5-2s5.2.7 7.5 2" />
+      <path d="M2.5 12c2.3 1.3 4.9 2 7.5 2s5.2-.7 7.5-2" />
+      <circle cx="10" cy="10" r="2" />
+    </svg>
+  );
+}
