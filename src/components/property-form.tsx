@@ -12,6 +12,7 @@ type PropertyFormValues = {
   alleyAddress?: string | null;
   buildYear?: number;
   neighborhoodBlurb?: string | null;
+  isWholeHouse?: boolean;
 };
 
 export function PropertyForm({
@@ -41,6 +42,19 @@ export function PropertyForm({
           className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
         />
       </div>
+
+      <label className="flex items-start gap-2 rounded-md border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
+        <input
+          type="checkbox"
+          name="isWholeHouse"
+          defaultChecked={defaultValues?.isWholeHouse ?? false}
+          className="mt-0.5 rounded border-stone-300"
+        />
+        <span>
+          <span className="font-medium">This is a whole house</span> — one listing, no
+          separate units. Skips unit setup and lets you add the listing directly.
+        </span>
+      </label>
 
       <AddressAutocomplete
         defaultAddressLine1={defaultValues?.addressLine1}

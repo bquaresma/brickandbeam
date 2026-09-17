@@ -107,6 +107,11 @@ model Property {
   // the public listing, alongside the front-address one.
   alleyAddress String?
 
+  // A whole-house rental (not subdivided) skips the multi-unit UI: exactly
+  // one Unit is created automatically to hold its Listing, and the
+  // dashboard shows a single "Listing" panel instead of a Units list.
+  isWholeHouse Boolean @default(false)
+
   // Drives the lead-paint disclosure gate: any property with buildYear < 1978
   // requires the Title X disclosure workflow before a lease is signed.
   buildYear Int

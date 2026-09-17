@@ -75,8 +75,14 @@ export async function createUnit(
   formData: FormData,
 ): Promise<ActionResult> {
   const user = await requireLandlord();
-  if (!(await assertOwnsProperty(propertyId, user.id))) {
+  const property = await assertOwnsProperty(propertyId, user.id);
+  if (!property) {
     return { error: "Property not found." };
+  }
+  if (property.isWholeHouse) {
+    return {
+      error: "This property is set up as a whole house — it already has its listing.",
+    };
   }
   const parsed = parseUnitForm(formData);
   if ("error" in parsed) return parsed;

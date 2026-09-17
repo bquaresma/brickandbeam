@@ -52,6 +52,9 @@ const GRAIN_BG =
 function mapsSearchUrl(address: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
+function mapsCoordUrl({ lat, lng }: GeocodeResult) {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+}
 function streetViewUrl({ lat, lng }: GeocodeResult) {
   return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
 }
@@ -285,16 +288,28 @@ export default async function PublicListingPage({
             </a>
           )}
           {alleyGeo && (
-            <a
-              href={streetViewUrl(alleyGeo)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs font-medium hover:underline"
-              style={{ color: BRICK }}
-            >
-              <PanoramaIcon className="h-4 w-4" />
-              Street View — alley
-            </a>
+            <>
+              <a
+                href={mapsCoordUrl(alleyGeo)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-medium hover:underline"
+                style={{ color: BRICK }}
+              >
+                <MapPinIcon className="h-4 w-4" />
+                View alley on map
+              </a>
+              <a
+                href={streetViewUrl(alleyGeo)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-medium hover:underline"
+                style={{ color: BRICK }}
+              >
+                <PanoramaIcon className="h-4 w-4" />
+                Street View — alley
+              </a>
+            </>
           )}
         </div>
 

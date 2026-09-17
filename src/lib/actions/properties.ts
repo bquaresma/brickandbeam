@@ -17,6 +17,7 @@ type PropertyData = {
   alleyAddress: string | null;
   buildYear: number;
   neighborhoodBlurb: string | null;
+  isWholeHouse: boolean;
 };
 
 function parsePropertyForm(
@@ -32,6 +33,7 @@ function parsePropertyForm(
   const buildYearRaw = String(formData.get("buildYear") ?? "").trim();
   const buildYear = Number.parseInt(buildYearRaw, 10);
   const neighborhoodBlurb = String(formData.get("neighborhoodBlurb") ?? "").trim();
+  const isWholeHouse = formData.get("isWholeHouse") === "on";
 
   if (!addressLine1 || !city || !state || !zip) {
     return { error: "Address, city, state, and zip are required." };
@@ -55,6 +57,7 @@ function parsePropertyForm(
       alleyAddress: alleyAddress || null,
       buildYear,
       neighborhoodBlurb: neighborhoodBlurb || null,
+      isWholeHouse,
     },
   };
 }
@@ -65,7 +68,14 @@ export async function createProperty(formData: FormData): Promise<ActionResult> 
   if ("error" in parsed) return parsed;
 
   const property = await prisma.property.create({
-    data: { ...parsed.data, landlordId: user.id },
+    data: {
+      ...parsed.data,
+      landlordId: user.id,
+      // Whole-house properties skip the multi-unit UI, but the schema still
+      // needs one Unit to hang the Listing off of — create it now so the
+      // property page can go straight to "Add listing" with no extra step.
+      units: parsed.data.isWholeHouse ? { create: { name: "Whole house" } } : undefined,
+    },
   });
 
   revalidatePath("/dashboard");
@@ -82,10 +92,19 @@ export async function updateProperty(
 
   const existing = await prisma.property.findFirst({
     where: { id: propertyId, landlordId: user.id },
+    include: { units: true },
   });
   if (!existing) return { error: "Property not found." };
 
-  await prisma.property.update({ where: { id: propertyId }, data: parsed.data });
+  const needsDefaultUnit = parsed.data.isWholeHouse && existing.units.length === 0;
+
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: {
+      ...parsed.data,
+      units: needsDefaultUnit ? { create: { name: "Whole house" } } : undefined,
+    },
+  });
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/properties/${propertyId}`);
