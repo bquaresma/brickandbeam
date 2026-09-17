@@ -1,5 +1,6 @@
 import { FormWithError, SubmitButton } from "@/components/action-form";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { StreetViewPreviewButton } from "@/components/street-view-preview-button";
 import type { ActionResult } from "@/lib/actions/action-result";
 
 type PropertyFormValues = {
@@ -63,6 +64,11 @@ export function PropertyForm({
         defaultZip={defaultValues?.zip}
       />
 
+      <StreetViewPreviewButton
+        fieldIds={["addressLine1", "city", "state", "zip"]}
+        label="Preview Street View — front"
+      />
+
       <div>
         <label
           htmlFor="addressLine2"
@@ -98,6 +104,12 @@ export function PropertyForm({
           If this property backs onto an alley or service street, adding it here adds a
           second Street View link on the public listing.
         </p>
+        <div className="mt-2">
+          <StreetViewPreviewButton
+            fieldIds={["alleyAddress"]}
+            label="Preview Street View — alley"
+          />
+        </div>
       </div>
 
       <div>
