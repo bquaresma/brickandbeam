@@ -1,0 +1,45 @@
+name: Teardown
+
+# Pauses AWS spend: destroys the ALB/ECS stack and the RDS database, keeping
+# the free/near-free pieces (VPC, security groups, ACM cert, ECR repo, SSM
+# secrets) so the ACM cert never needs DNS re-validation. The database is
+# deleted without a final snapshot — its data is lost.
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-west-2
+  TF_VERSION: "1.9.8"
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::556122828441:role/brickandbeam-github-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Destroy app stack (ALB, ECS, IAM roles, logs)
+        working-directory: infra/app
+        run: |
+          terraform init
+          terraform destroy -auto-approve
+
+      - name: Destroy database (RDS + its connection-string parameter)
+        working-directory: infra/data
+        run: |
+          terraform init
+          terraform destroy -auto-approve \
+            -target=aws_ssm_parameter.database_url \
+            -target=aws_db_instance.main
