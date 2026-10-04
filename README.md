@@ -4,9 +4,10 @@ A landlord toolkit for one-of-a-kind older homes (pre-1978 character properties)
 urban neighborhoods. See [`planning/old-home-rental-toolkit-plan.md`](planning/old-home-rental-toolkit-plan.md)
 for the full product plan.
 
-This repo currently holds the **Phase 1 skeleton**: landlord auth, property/unit/listing CRUD, a
-public listing page, and lead capture. No prescreening questionnaire, rental application, Zillow
-feed integration, screening, or payments yet.
+This repo currently holds the **Phase 1 foundation**: landlord auth, property/unit/listing CRUD, a
+public listing page with owner draft preview, and lead capture. No prescreening questionnaire,
+rental application, Zillow feed integration, screening, or payments yet. The build order and
+schedule live in [`planning/launch-roadmap.md`](planning/launch-roadmap.md).
 
 ## Stack
 
@@ -67,7 +68,11 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Sign up for a landlord account at `/signup`,
-then add properties and units from `/dashboard`.
+then add properties from `/dashboard` (whole house is the default).
+
+Optional: `npm run db:seed` adds a fictional sample landlord, property, listing and lead
+(credentials are printed by the script). `npm run db:reset` rebuilds the dev database from the
+migrations and re-seeds it — it **deletes all local data**.
 
 ## Useful scripts
 
@@ -80,13 +85,21 @@ then add properties and units from `/dashboard`.
 | `npm run format:check` | Check formatting without writing       |
 | `npm run db:migrate`   | `prisma migrate dev`                   |
 | `npm run db:studio`    | Open Prisma Studio (visual DB browser) |
+| `npm run db:seed`      | Add fictional sample data (idempotent) |
+| `npm run db:reset`     | Rebuild the dev DB from migrations     |
+| `npm test`             | Unit tests (Vitest)                    |
+| `npm run test:e2e`     | Browser smoke test (Playwright)        |
+
+The smoke test uses its own `brickandbeam_test` database (override with `TEST_DATABASE_URL`) and
+starts its own dev server on port 3100. First run needs `npx playwright install chromium`.
 
 ## Data model
 
 - **User** — landlord/applicant/team-member (role-based; only `LANDLORD` is used today), plus the
   standard Auth.js `Account`/`Session`/`VerificationToken` tables
 - **Property** — address + `buildYear` + `neighborhoodBlurb` (shared across every unit's listing at
-  that address). `buildYear < 1978` drives the federal lead-based paint disclosure gate (see
+  that address). Coordinates are geocoded once at save time, and `publicContactEmail` is the
+  address shown publicly (the landlord's sign-in email never is). `buildYear < 1978` drives the federal lead-based paint disclosure gate (see
   `src/lib/compliance.ts`)
 - **Unit** — belongs to a Property; supports non-standard layouts via optional `bedrooms`/
   `bathrooms`/`squareFeet` plus freeform `layoutNotes` and a flexible `rooms` JSON field for
@@ -97,7 +110,8 @@ then add properties and units from `/dashboard`.
   teaser, `leaseTerm`, `virtualTourUrl`, `heroPhotoUrl`/`floorPlanUrl` (plain URLs for now — no
   upload pipeline yet), and a `DRAFT`/`PUBLISHED`/`ARCHIVED` status. Landlord-side CRUD is at
   `/dashboard/properties/[id]/units/[unitId]/listing/new` and `/edit`; published listings are
-  publicly viewable at `/listings/[listingId]` (draft/archived return a 404 to non-owners)
+  publicly viewable at `/listings/[listingId]` (draft/archived return a 404 to everyone except the
+  owning landlord, who sees them with a "not public" banner)
 - **Amenity / PetPolicy / Fee / Utility** — unit-scoped records shaped to match the field names used
   by Zillow's Rental Listing feed (tag-based amenities, per-pet-type policies, typed fees with
   timing/refundability, per-utility included-vs-tenant-pays), so a future syndication export
@@ -112,10 +126,10 @@ then add properties and units from `/dashboard`.
 The public listing page (`/listings/[listingId]`) uses an "Industrial Heritage" palette —
 brick red `#9A4635`, aged timber `#6B4A34`, warm plaster `#F3E8D8`, iron charcoal `#262626`,
 weathered brass `#B08A4A` (hover states), soft sage `#5f6b52` (amenity tags) — plus the
-Spectral serif for headings, scoped to that route via `next/font/google`. This is
-deliberately **not** applied to the landlord dashboard, auth pages, or anywhere else in the
-app, which stay on plain Tailwind stone/amber — the dashboard is a utilitarian internal tool,
-the listing page is the public-facing brand moment.
+Spectral serif for headings, scoped to that route via `next/font/google`. The landing,
+sign-in/sign-up and dashboard pages use the related "Hearth" palette (`HEARTH` in
+`src/components/hearth-page-shell.tsx`): charcoal-brown headings `#3D2E24`, warm taupe body
+`#7A5B48`, rust accent `#B1502F`, brass-gold `#C99A4E`.
 
 ## Auth notes
 
@@ -128,7 +142,14 @@ the listing page is the public-facing brand moment.
 - `/dashboard/**` is gated by `src/proxy.ts`; individual server actions in `src/lib/actions/`
   additionally scope every query to the signed-in landlord's own records
 
-## Deployment target
+## File storage
 
-Local dev uses Docker Postgres. Production is planned on AWS, with Postgres on RDS — no RDS
-setup here yet, just `DATABASE_URL` pointed at a standard Postgres connection string.
+User files go through the storage adapter in `src/lib/adapters/storage` — the database stores
+storage keys, never URLs. `STORAGE_DRIVER=local` (the only driver today) writes under
+`STORAGE_LOCAL_DIR` (gitignored).
+
+## Deployment
+
+Local dev uses Docker Postgres. Production infrastructure (Terraform, ECS, RDS) lives in
+[`infra/`](infra/README.md); deploys are manual (Actions → Deploy) and nothing deploys on push.
+The launch roadmap schedules the first production deploy for January.
