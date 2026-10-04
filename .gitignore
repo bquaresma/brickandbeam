@@ -48,3 +48,10 @@ next-env.d.ts
 *.tfplan
 crash.log
 crash.*.log
+
+# local file storage (STORAGE_DRIVER=local)
+/.local-storage/
+
+# testing
+/test-results/
+/playwright-report/
