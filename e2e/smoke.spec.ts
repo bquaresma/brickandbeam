@@ -264,3 +264,144 @@ test("another landlord cannot upload to a listing they don't own", async ({
   expect(heicResponse.status()).toBe(422);
   expect((await heicResponse.json()).code).toBe("heic");
 });
+
+test("house details and floor plans: saved, shown publicly, 'Not sure' stays private", async ({
+  page,
+  browser,
+}) => {
+  await signUp(page, "details");
+  const { propertyUrl, listingPath } = await createDraftListing(page);
+
+  await page.goto(propertyUrl);
+  await page.getByRole("link", { name: "House details" }).click();
+  await page.waitForURL(/\/walkthrough$/);
+  const walkthroughUrl = page.url();
+
+  const saved = (section: string) =>
+    page.locator(`#${section}`).getByText("Saved", { exact: true });
+
+  // Kitchen: an answer, a "No", a "Not sure", and a note.
+  await page.locator("#kitchen-range").selectOption("gas");
+  await page.locator("#kitchen-dishwasher").selectOption("no");
+  await page
+    .getByRole("radiogroup", { name: "Outlets near the sink are GFCI-protected" })
+    .getByRole("radio", { name: "Not sure" })
+    .click();
+  await page.locator("#kitchen-notes").fill("The floor slopes toward the window.");
+  await page.getByRole("button", { name: "Save kitchen" }).click();
+  await expect(saved("kitchen")).toBeVisible();
+
+  // A bathroom with a claw-foot tub and no outlet.
+  await page.getByRole("button", { name: "+ Add a bathroom" }).click();
+  const baths = page.locator("#bathrooms");
+  await baths.getByLabel("Name this one (optional)").fill("Upstairs bath");
+  await baths.getByLabel("Tub", { exact: true }).selectOption("clawfoot");
+  await baths.getByLabel("Outlets", { exact: true }).selectOption("none");
+  await page.getByRole("button", { name: "Save bathrooms" }).click();
+  await expect(saved("bathrooms")).toBeVisible();
+
+  // Basement.
+  await page.locator("#basement-type").selectOption("full");
+  await page.locator("#basement-moisture").selectOption("damp");
+  await page
+    .getByRole("radiogroup", { name: "Sump pump" })
+    .getByRole("radio", { name: "Yes" })
+    .click();
+  await page.getByRole("button", { name: "Save basement" }).click();
+  await expect(saved("basement")).toBeVisible();
+
+  // Character: a catalog chip and one of our own.
+  await page.getByRole("button", { name: "Original hardwood or pine floors" }).click();
+  await page.getByLabel("Add your own: Features").fill("a dumbwaiter");
+  await page.getByLabel("Add your own: Features").press("Enter");
+  await page.getByRole("button", { name: "Save character and quirks" }).click();
+  await expect(saved("character")).toBeVisible();
+
+  // A room, described honestly.
+  await page.getByRole("button", { name: "+ Add a room" }).click();
+  const rooms = page.locator("#rooms");
+  await rooms.getByLabel("Room name").fill("Attic suite");
+  await rooms.getByLabel("Type", { exact: true }).selectOption("non-conforming-bedroom");
+  await rooms.getByLabel("Floor", { exact: true }).selectOption("Attic");
+  await rooms.getByLabel("Marker on your floor plan").fill("A");
+  await rooms.getByLabel("Length (ft)").fill("11");
+  await rooms.getByLabel("Width (ft)").fill("14");
+  await rooms
+    .getByRole("radiogroup", { name: "Counts as a bedroom" })
+    .getByRole("radio", { name: "No", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Save rooms" }).click();
+  await expect(saved("rooms")).toBeVisible();
+
+  // Floor plans: one per level; uploading again replaces it.
+  const plan = await sharp({
+    create: { width: 1600, height: 1200, channels: 3, background: "#fff" },
+  })
+    .png()
+    .toBuffer();
+  const atticPlan = page.getByAltText("Attic floor plan");
+  await page
+    .getByLabel("Upload Attic floor plan")
+    .setInputFiles({ name: "attic.png", mimeType: "image/png", buffer: plan });
+  await expect(atticPlan).toBeVisible({ timeout: 60_000 });
+  const firstSrc = await atticPlan.getAttribute("src");
+
+  await page
+    .getByLabel("Upload Attic floor plan")
+    .setInputFiles({ name: "attic2.png", mimeType: "image/png", buffer: plan });
+  await expect
+    .poll(async () => atticPlan.getAttribute("src"), { timeout: 60_000 })
+    .not.toBe(firstSrc);
+  await expect(atticPlan).toHaveCount(1);
+
+  // Everything persisted: reload and look. The "Not sure" answer is an open item.
+  await page.reload();
+  await expect(page.locator("#kitchen-range")).toHaveValue("gas");
+  await expect(page.locator("#kitchen").getByText("Open item")).toBeVisible();
+  await expect(
+    page.locator("#bathrooms").getByLabel("Name this one (optional)"),
+  ).toHaveValue("Upstairs bath");
+  await expect(page.locator("#rooms").getByLabel("Room name")).toHaveValue("Attic suite");
+
+  // Publish, then read the public page as a stranger.
+  await openEditListing(page, propertyUrl);
+  await page.locator("#status").selectOption("PUBLISHED");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.waitForURL(/\/dashboard\/properties\/[^/]+$/);
+
+  const anonymous = await (await browser.newContext()).newPage();
+  await anonymous.goto(new URL(listingPath, page.url()).toString());
+  const html = await anonymous.content();
+
+  const details = anonymous.locator("section", { hasText: "The Details" });
+  await expect(details.getByText("Gas", { exact: true })).toBeVisible();
+  await expect(details.getByText("No", { exact: true }).first()).toBeVisible(); // dishwasher
+  await expect(details.getByText("Upstairs bath")).toBeVisible();
+  await expect(details.getByText("Claw-foot")).toBeVisible();
+  await expect(details.getByText("Occasionally damp")).toBeVisible();
+  await expect(
+    details.getByText("Original hardwood or pine floors, a dumbwaiter"),
+  ).toBeVisible();
+  await expect(details.getByText("The floor slopes toward the window.")).toBeVisible();
+
+  // The "Not sure" answer never reaches the page.
+  expect(html).not.toContain("GFCI-protected");
+  expect(html.toLowerCase()).not.toContain("not sure");
+
+  // Floor plan with its legend and the "not to scale" label.
+  const layout = anonymous.locator("section", { hasText: "The House, Room by Room" });
+  await expect(layout.locator("picture img")).toHaveAttribute("alt", "Attic floor plan");
+  await expect(
+    layout.getByText("Approximate — not to scale. Tap to enlarge."),
+  ).toBeVisible();
+  await expect(layout.getByText("Attic suite")).toBeVisible();
+  await expect(layout.getByText("11 × 14 ft")).toBeVisible();
+  await expect(
+    layout.getByText("Non-conforming bedroom · Not counted as a bedroom"),
+  ).toBeVisible();
+
+  // Another landlord cannot even open this walk-through.
+  const intruder = await (await browser.newContext()).newPage();
+  await signUp(intruder, "intruder2");
+  expect((await intruder.goto(walkthroughUrl))?.status()).toBe(404);
+});

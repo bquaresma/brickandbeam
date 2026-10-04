@@ -176,6 +176,19 @@ as responsive `<picture>` elements. Conversion runs one photo at a time because 
 expect roughly 7–14 s per 12-megapixel photo on the small production task. After changing presets
 in `src/lib/images/process.ts`, bump `PRESET_VERSION` and run `npm run photos:regenerate`.
 
+## House details (the walk-through)
+
+Each unit has a guided walk-through at `/dashboard/properties/[id]/units/[unitId]/walkthrough`:
+rooms with per-floor floor plans, and cards for kitchen, bathrooms, basement, laundry, systems,
+character and quirks, known conditions, and outdoors. The questions live in one catalog,
+`src/lib/details/catalog.ts`, which drives the forms, the validation (generated into `zod`
+schemas in `schema.ts`) and the public listing (`format.ts`). Every question is optional; where a
+landlord may not know, the answer is Yes / No / **Not sure**, and "Not sure" is never shown
+publicly — it stays on the landlord's page as an open item. Answers are stored as versioned JSON in
+`Unit.details` (rooms in `Unit.rooms`); each card saves with an atomic `jsonb_set`, so adding a
+question never needs a migration. Floor plans are `ListingPhoto` rows of kind `FLOOR_PLAN`, one per
+level (a new upload replaces the old one), shown as "Approximate — not to scale".
+
 ## File storage
 
 User files go through the storage adapter in `src/lib/adapters/storage` — the database stores

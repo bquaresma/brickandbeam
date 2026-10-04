@@ -141,6 +141,12 @@ the camera produced; visitors get small, sharp, fast images.
 
 ### 1.2 Rooms, floor plans, and what makes an old house different (L)
 
+**Status (Oct 4): built and tested** — the field catalog and generated validation, the walk-through page with its completeness
+meter, the rooms editor, per-level floor plans (a new upload replaces the old), the public room-by-room section and detail
+cards (with "Not sure" never shown), and the optional property style. Checked in a browser on desktop and a phone-sized
+viewport. **Still open:** the radon and known-conditions wording is waiting on the attorney (§17), and a lived-in pass by Brian
+on the real house will show which questions are missing.
+
 **Principles.** Every field is optional. Where a landlord might not know, the answer is **Yes / No / Not sure**, and "Not sure"
 is **never shown publicly** (the landlord sees it as an open item). Every area has a free-text note. The public page shows only
 what was answered, in a plain, honest tone. Old houses are chosen for their character, and renters want the quirks stated up

@@ -18,8 +18,8 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-[#FBF0E1]">
       <header className="border-b border-[#e7d9c3] bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-6">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-4">
+          <div className="flex items-center gap-4 sm:gap-6">
             <Link href="/dashboard" className="font-semibold text-[#3D2E24]">
               Brick and Beam
             </Link>
@@ -35,8 +35,9 @@ export default async function DashboardLayout({
               )}
             </Link>
           </div>
-          <div className="flex items-center gap-4 text-sm text-stone-600">
-            <span>{user.email}</span>
+          <div className="flex min-w-0 items-center gap-4 text-sm text-stone-600">
+            {/* Hidden on phones, where it would push the page wider than the screen. */}
+            <span className="hidden truncate sm:inline">{user.email}</span>
             <form
               action={async () => {
                 "use server";

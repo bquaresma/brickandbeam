@@ -8,7 +8,11 @@ import { createLead } from "@/lib/actions/leads";
 import { auth } from "@/lib/auth";
 import type { GeocodeResult } from "@/lib/geocode";
 import { FormWithError, SubmitButton } from "@/components/action-form";
+import { FloorPlans } from "@/components/floor-plans";
+import { HouseDetails } from "@/components/house-details";
 import { ListingGallery } from "@/components/listing-gallery";
+import { publicSections } from "@/lib/details/format";
+import type { Details, Room } from "@/lib/details/schema";
 import { toPhotoView } from "@/lib/images/view";
 import {
   BedIcon,
@@ -147,10 +151,7 @@ async function getListing(listingId: string) {
           utilities: true,
         },
       },
-      photos: {
-        where: { kind: "PHOTO" },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      },
+      photos: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
     },
   });
 
@@ -215,6 +216,10 @@ export default async function PublicListingPage({
   const includedUtilities = unit.utilities.filter((u) => u.included);
   const tenantUtilities = unit.utilities.filter((u) => !u.included);
 
+  const plans = listing.photos.filter((p) => p.kind === "FLOOR_PLAN").map(toPhotoView);
+  const rooms = (unit.rooms as Room[] | null) ?? [];
+  const detailSections = publicSections(unit.details as Details | null);
+
   const storyParagraphs = listing.story.split("\n").filter((p) => p.trim());
 
   const mailSubject = encodeURIComponent(
@@ -260,7 +265,7 @@ export default async function PublicListingPage({
 
       <main className="mx-auto max-w-3xl px-4 py-10">
         <ListingGallery
-          photos={listing.photos.map(toPhotoView)}
+          photos={listing.photos.filter((p) => p.kind === "PHOTO").map(toPhotoView)}
           legacyHeroUrl={listing.heroPhotoUrl}
           fallbackAlt={listing.headline || unit.name}
           borderColor={`${TIMBER}26`}
@@ -466,7 +471,25 @@ export default async function PublicListingPage({
           </section>
         )}
 
-        {listing.floorPlanUrl && (
+        {(plans.length > 0 || rooms.length > 0) && (
+          <section className="mt-12">
+            <Eyebrow>The House, Room by Room</Eyebrow>
+            <div className="mt-4">
+              <FloorPlans plans={plans} rooms={rooms} />
+            </div>
+          </section>
+        )}
+
+        {detailSections.length > 0 && (
+          <section className="mt-12">
+            <Eyebrow>The Details</Eyebrow>
+            <div className="mt-4">
+              <HouseDetails sections={detailSections} />
+            </div>
+          </section>
+        )}
+
+        {listing.floorPlanUrl && plans.length === 0 && (
           <section className="mt-12">
             <Eyebrow>The Layout</Eyebrow>
             <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
