@@ -33,17 +33,17 @@ an interface plus a local implementation. Store storage **keys**, never URLs, in
 
 ### Schedule
 
-| Window          | Work                                                                                                                                                             | Milestone                                                                                             |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Oct 5 – Oct 18  | **Stage 0** foundation. Brian: call the lawyer-referral line and collect 2–3 flat-fee quotes (§10), get the "no permit needed" answer confirmed in writing (§10) | **M0** foundation done                                                                                |
-| Oct 19 – Nov 15 | **Stage 1** listing half + compliance tracker. Attorney engaged by Nov 15                                                                                        | **M1 — dress rehearsal 1:** the property is fully listed locally; ads and photo zip generated         |
-| Nov 16 – Dec 20 | **Stages 2–3** applicant pipeline, screening tracking, decision. Attorney reviews criteria, application, adverse-action notice (Dec)                             | **M2 — dress rehearsal 2:** a fake applicant goes list → lead → prescreen → apply → decision, locally |
-| Dec 21 – Jan 3  | Holiday buffer (spill-over from Stages 2–3). **Prod-grade Terraform edits, code only — nothing applies until Deploy is run** (§12)                               | —                                                                                                     |
-| Jan 4 – Jan 24  | **Stage 4** go-live gate: deploy, harden, SES email, legal sign-off, real property and photos entered                                                            | **M3** production up on the real domain; backup restore tested                                        |
-| Jan 25 – Jan 31 | Final checks, ads drafted                                                                                                                                        | —                                                                                                     |
-| **Feb 1**       | **Start advertising**                                                                                                                                            | **M4**                                                                                                |
-| Feb 1 – Feb 28  | **Stage 5** lease generation, e-sign, deposit and first-rent collection — built while applicants flow in                                                         | **M5** ready before the first lease signing (target Feb 22)                                           |
-| Mar 1 →         | Move-in. **Stage 6** tenant portal, recurring rent, maintenance                                                                                                  | **M6**                                                                                                |
+| Window          | Work                                                                                                                                                                                | Milestone                                                                                             |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Oct 5 – Oct 18  | **Stage 0** foundation. Brian: call the lawyer-referral line and collect 2–3 flat-fee quotes (§10), get the "no permit needed" answer confirmed in writing (§10)                    | **M0** foundation done                                                                                |
+| Oct 19 – Nov 15 | **Stage 1** listing half + compliance tracker, started early because Stage 0 finished Oct 4 (about six weeks for the larger photo and room-detail work). Attorney engaged by Nov 15 | **M1 — dress rehearsal 1:** the property is fully listed locally; ads and photo zip generated         |
+| Nov 16 – Dec 20 | **Stages 2–3** applicant pipeline, screening tracking, decision. Attorney reviews criteria, application, adverse-action notice (Dec)                                                | **M2 — dress rehearsal 2:** a fake applicant goes list → lead → prescreen → apply → decision, locally |
+| Dec 21 – Jan 3  | Holiday buffer (spill-over from Stages 2–3). **Prod-grade Terraform edits, code only — nothing applies until Deploy is run** (§12)                                                  | —                                                                                                     |
+| Jan 4 – Jan 24  | **Stage 4** go-live gate: deploy, harden, SES email, legal sign-off, real property and photos entered                                                                               | **M3** production up on the real domain; backup restore tested                                        |
+| Jan 25 – Jan 31 | Final checks, ads drafted                                                                                                                                                           | —                                                                                                     |
+| **Feb 1**       | **Start advertising**                                                                                                                                                               | **M4**                                                                                                |
+| Feb 1 – Feb 28  | **Stage 5** lease generation, e-sign, deposit and first-rent collection — built while applicants flow in                                                                            | **M5** ready before the first lease signing (target Feb 22)                                           |
+| Mar 1 →         | Move-in. **Stage 6** tenant portal, recurring rent, maintenance                                                                                                                     | **M6**                                                                                                |
 
 Dates assume steady weekly progress and are estimates, not promises.
 
@@ -103,28 +103,113 @@ can't share the same safety settings.
 
 New dependencies at this stage: `vitest`, `@playwright/test` (both free — §14).
 
-## 3. Stage 1 — Listing half and the property's paperwork (Oct 19 – Nov 15)
+## 3. Stage 1 — Listing half and the property's paperwork (started Oct 5; due Nov 15)
 
 Order: adapters (0.10) first; photos unblock the gallery and the photo zip; the compliance tracker (1.6) is independent and
 can start any time. Share/discovery work (old 1.3) moves to Stage 4, when a public URL exists.
 
-### 1.1 Photo pipeline (L)
+### 1.1 Photo pipeline and conversion (L)
 
-- **Model:** `ListingPhoto { id, listingId, storageKey, kind PHOTO|FLOOR_PLAN, caption, altText, sortOrder, isHero, width, height, contentType, bytes }`. Migrate `heroPhotoUrl`/`floorPlanUrl` into it (keep the old columns until the migration is verified, then drop).
-- **Upload path:** a **route handler** (`POST /api/uploads`, multipart), not a server action — Next 16 caps action bodies at **1 MB** by default (`serverActions.bodySizeLimit`), so a route handler is the cleaner fit for multi-photo uploads. Auth + ownership check (listing → unit → property → landlord) on every call.
-- **Processing:** `sharp`. Validate declared type **and** magic bytes; cap at ~10 MB each; auto-rotate from EXIF orientation, then **strip all metadata — EXIF GPS in photos of a home would leak its exact location**. Write variants (e.g. 400w thumb, 800w, 1600w, 1200×630 share crop) via the storage adapter.
-- **Serving:** a `GET /media/[...key]` route handler with long-lived immutable caching. Use plain `<img srcset>` on pre-sized variants instead of `next/image`, which avoids the optimizer and its `localPatterns` config entirely.
-- **UI:** multi-file drag-and-drop on the listing edit page with per-file progress and errors, reorder, pick hero, alt text. Public gallery: hero + grid + keyboard-accessible lightbox.
-- **Spike first (½ day):** iPhone photos are HEIC by default. Prebuilt `sharp` binaries may not decode HEIC (HEVC licensing) — verify. If not, restrict the file input's `accept` to JPEG/PNG/WebP and show a clear rejection message for HEIC.
-- **Done when:** ten phone-sized JPEGs upload, reorder, and render on the public page; served files contain no GPS; deleting a photo removes the file; another landlord's listing rejects the upload (tested).
+Every upload is converted once into a set of sizes and formats built for the web and for phones. Landlords upload whatever
+the camera produced; visitors get small, sharp, fast images.
 
-### 1.2 Rooms editor, character, and whole-house details (M)
+- **Model:** `ListingPhoto { id, listingId, storageKey (the master), kind PHOTO|FLOOR_PLAN, area, level, caption, altText, sortOrder, isHero, width, height, contentType, bytes, placeholder, variants (JSON list of preset, width, format, key, bytes), processedAt }`. `area` is EXTERIOR, LIVING, KITCHEN, BATHROOM, BEDROOM, BASEMENT, ATTIC, OUTDOOR, DETAIL or OTHER; `level` (Basement, First floor, Second floor, Attic) is used by floor plans. Migrate `heroPhotoUrl`/`floorPlanUrl` into it (keep the old columns until the migration is verified, then drop).
+- **Accept:** JPEG, PNG, WebP, and HEIC/HEIF if the spike allows. Check magic bytes, not just the declared type; cap at ~30 MB and ~100 megapixels per file; reject everything else with a plain-language message.
+- **Normalize into a master:** auto-rotate from EXIF orientation, **convert to sRGB** (iPhones shoot wide-gamut Display P3, which looks wrong on browsers that aren't color-managed), **strip all metadata — EXIF GPS in photos of a home would leak its exact location**, cap the long edge at 4000 px, and store it as a high-quality JPEG (PNG for floor plans). The master is never served publicly.
+- **Generate from the master:**
+  - **Display ladder:** widths 400 / 800 / 1200 / 1600 / 2400 px (never upscaled past the master) in **AVIF, WebP and progressive JPEG**. Starting quality: AVIF ≈ 50, WebP ≈ 75, JPEG ≈ 78. Budget: hero at 800 px AVIF ≤ ~120 KB, gallery thumbnails ≤ ~40 KB.
+  - **Share:** 1200 × 630 JPEG with an attention-based crop, for link previews (Stage 4).
+  - **Export:** 2048 px long-edge JPEG for the channel kit zip (1.4) — sRGB, no metadata, small enough to upload to the listing sites.
+  - **Placeholder:** a tiny blurred image stored with the row, shown while the real one loads.
+  - **Floor plans use a different profile:** no crop, lossless or near-lossless WebP with a PNG fallback (JPEG artifacts ruin line art), widths 800 / 1600 / 2400 px so a plan can be zoomed.
+- **Serving:** a `GET /media/[...key]` route handler with long-lived immutable caching (keys include a content hash). The page renders `<picture>` with AVIF → WebP → JPEG sources, `srcset` and `sizes`, explicit `width`/`height` so nothing jumps while loading, `loading="lazy"` and `decoding="async"` below the fold, and `fetchpriority="high"` on the hero. **Not `next/image`:** precomputed variants are deterministic, work from S3 or a CDN later, and survive an ECS task being replaced, whereas `next/image` re-encodes at request time inside a small container and keeps its cache on ephemeral disk.
+- **Reprocessing:** the master is kept, so a "regenerate variants" command rebuilds everything if the presets change.
+- **Upload path:** a **route handler** (`POST /api/uploads`, multipart), not a server action — Next 16 caps action bodies at **1 MB** by default (`serverActions.bodySizeLimit`). One photo per request, two or three in flight at once, processed inline in that request (no job queue needed), with per-file progress and errors. Auth + ownership check (listing → unit → property → landlord) on every call.
+- **UI:** drag-and-drop on the listing edit page, tag each photo with an area, reorder, pick the hero, alt text prefilled from the area and editable. Public gallery: hero + grid grouped by area + a keyboard-accessible lightbox.
+- **Spikes first (½–1 day):**
+  - **HEIC:** iPhone photos are HEIC by default and prebuilt `sharp` may not decode them (HEVC licensing). Fallbacks, in order: restrict the file input's `accept` (iOS then hands over JPEG), a free browser-side converter before upload, or reject HEIC with a clear message.
+  - **Memory and time:** AVIF encoding of a 12-megapixel photo inside the 0.5 GB Fargate task. Likely outcome: set `sharp` concurrency to 1, limit input pixels, and **raise the task to 1 GB (≈ +$1.60/month, my estimate — §14)**.
+- **Done when:** ten phone-sized photos (including a HEIC if supported) upload, convert, reorder and render on the public page in AVIF with WebP/JPEG fallbacks; no served file contains GPS; the hero loads under budget on a throttled mobile profile; deleting a photo removes the master and every variant; another landlord's listing rejects the upload (tested).
 
-- Structured room editor for `Unit.rooms`: name, type (bedroom, non-conforming bedroom, bath, kitchen, living, attic, basement, porch, yard, garage, outbuilding, other), optional dimensions, notes, conforming flag. Validate with `zod` (new dependency; reused by the Stage 2 application form).
-- Public listing: a "Room by room" section that makes non-standard layouts a feature rather than an apology.
-- Add `CHARACTER` to `AmenityCategory` with suggestion chips (original hardwood, exposed brick, radiators, claw-foot tub, working fireplace, high ceilings…) and a "known quirks" prompt (steep stairs, radiator heat, no central air).
-- Optional `Property.propertyStyle` (see §0).
-- **Done when:** a non-conforming bedroom and an unusual outbuilding are expressible without lying in the bed/bath fields.
+### 1.2 Rooms, floor plans, and what makes an old house different (L)
+
+**Principles.** Every field is optional. Where a landlord might not know, the answer is **Yes / No / Not sure**, and "Not sure"
+is **never shown publicly** (the landlord sees it as an open item). Every area has a free-text note. The public page shows only
+what was answered, in a plain, honest tone. Old houses are chosen for their character, and renters want the quirks stated up
+front.
+
+**Guided walk-through.** Area cards: _Rooms and floor plans · Kitchen · Bathrooms (one card per bathroom) · Basement ·
+Systems · Character and quirks · Outdoors and parking_. Built for a phone — a landlord can fill it in while walking the
+house — with chips and toggles instead of long forms, save per card, and a completeness meter. Photos can be tagged to an
+area (1.1) so each card can show its own pictures.
+
+**Floor plans (added).**
+
+- One image per **level** (Basement, First floor, Second floor, Attic…), uploaded through the 1.1 pipeline as `kind = FLOOR_PLAN` with a `level`. A phone photo of a hand sketch is fine; so is a scan or an export from a measuring app.
+- Each room carries a `level` and an optional **marker** (`A`, `1`…) that matches a label on the sketch.
+- Public page: a tab per level, a zoomable plan, and a **text legend of rooms beside it** so the information is accessible without the image.
+- Every plan carries an **"Approximate — not to scale"** label. Dimensions are optional.
+- Later idea, not scheduled: a simple block diagram generated from room dimensions.
+
+**Rooms.** Name, type (bedroom, non-conforming bedroom, bath, kitchen, living, dining, attic, basement, porch, yard, garage, outbuilding, other), level, marker, optional length × width in feet, ceiling-height note, natural light (window count and direction), feature tags (closet, built-ins, fireplace, pocket doors, transom…), notes, and **"Counts as a bedroom?" Yes / No / Not sure** (closet and exit window) rather than a vague "conforming" flag. Validated with `zod`.
+
+**Kitchen.**
+
+- Layout: galley, eat-in, open, separate; approximate size; pantry or butler's pantry.
+- Cabinets and counters: original or updated; counter material; floor material.
+- **Range:** gas, electric, or none (bring your own) — and which hookups exist (gas line, 240 V outlet).
+- Included appliances (existing tags); **space for a refrigerator** (width × depth × height, or "standard"); dishwasher yes / no / hookup only; disposal; microwave; range hood vented, recirculating or none.
+- Outlets: how many, and whether they're GFCI-protected. Natural light and ventilation.
+- Quirks prompt: sloping floor, sticking drawers, undersized fridge space, no dishwasher hookup.
+
+**Bathrooms** (one entry each).
+
+- Level and type: full, three-quarter, half.
+- **Tub:** claw-foot, soaking, alcove, none. **Shower:** over the tub, separate stall, none (a shower over a claw-foot tub usually means a curtain ring — say so).
+- Original or updated fixtures: pedestal sink, hex tile, vanity, high-tank toilet.
+- **Ventilation:** exhaust fan, window only, neither. **Outlets:** none / one (GFCI) — older baths often have none, and a renter will want to know.
+- Hot water note (capacity, how long it takes to arrive). Accessibility: steps to reach it, tub wall height. Year last updated.
+- Quirks prompt: sloped ceiling, tight clearance, pressure, separate hot and cold taps.
+
+**Basement.**
+
+- Type: full, partial, crawlspace, none. Finish: unfinished, partly finished, finished.
+- **Head clearance** (feet, or "low spots"); floor and walls: concrete, stone, brick, dirt.
+- **Moisture:** dry, occasionally damp, has had water (year). Sump pump, French drain, dehumidifier included or not. Floor drain.
+- Access: interior stairs (and how steep), exterior bulkhead; lighting.
+- Tenant use: exclusive or shared storage, workshop, laundry.
+- **Laundry** (its own small card, since location varies in old houses): basement, kitchen, bath, closet, none; washer hookup; dryer gas / electric / vent present; laundry sink.
+- Mechanicals located here: furnace or boiler, water heater, electrical panel, meter.
+- Optional: radon test result and date, if one exists (Allegheny County has a reputation for radon; ask the attorney how to word it, §17).
+
+**Systems — the older-house specifics.**
+
+- **Heat:** forced air, steam radiators, hot-water radiators, baseboard, none central; fuel; thermostat zones; radiator covers.
+- **Cooling:** central, window units fine (and whether the windows suit them), mini-split, none.
+- **Electrical:** fuse box or breakers; amperage (60 / 100 / 150 / 200 / not sure); grounded three-prong outlets throughout, some, or none; known wiring (modern, mixed, knob-and-tube remnants, not sure).
+- **Plumbing:** supply pipes (copper, galvanized, PEX, mixed, not sure); **water service line material (lead, copper, not sure)** — a known-hazard item that sits beside the lead-paint disclosure; water heater type, size and age; sewer line (clay, updated, not sure).
+- **Windows:** original wood sash, replaced, storm windows, screens; whether they open easily.
+- **Insulation and drafts:** attic insulated; a free-text note. Optional **typical monthly utility range** if the landlord knows it — the number renters of old houses most want.
+
+**Character and quirks** (the heart of the page). Chips plus free text:
+
+- Surfaces: original hardwood or pine floors; plaster walls (and picture-hanging rules); picture rails; crown molding; wainscoting; tin ceilings; ceiling medallions.
+- Built features: built-ins and bookcases; window seat; pocket doors; transoms; stained or leaded glass; original banister; back or servant stairs; butler's pantry; sleeping porch; dumbwaiter; coal chute; cupola.
+- **Fireplace:** working wood, gas log, decorative, sealed; chimney inspected.
+- **Shared party wall** (semi-detached — sound and neighbors).
+- Quirks: steep or narrow stairs, low doorways or beams, uneven floors, sloped ceilings, sticking windows or doors, banging radiator pipes.
+- **Furniture move-in notes:** narrowest doorway and stair width, tight turns — practical and rarely stated.
+- **Known conditions (optional, landlord-chosen):** anything the landlord knows that a tenant would want to know before signing, such as asbestos tile or pipe wrap, past water intrusion or mold, a lead water line, knob-and-tube wiring. The lead-paint notice is added automatically. **Wording is the attorney's call** (§17).
+
+**Outdoors and parking.** Porch, deck, yard (fenced or not), alley access (existing alley field), parking (existing type plus "street permit zone" and a note), trash and recycling day.
+
+**Data model.** `Unit.rooms` (existing JSON) holds the rooms. A new versioned **`Unit.details`** JSON column holds the rest — `{ version: 1, kitchen, bathrooms[], basement, laundry, systems, character, knownConditions, outdoors }` — validated with `zod`, so adding a field later never needs a migration. This is display data today; the Zillow-shaped columns and records stay as they are. Floor-plan files and area-tagged photos use `ListingPhoto` (1.1).
+
+**Public page.** "The house, room by room" (floor plan tabs + room legend); cards for Kitchen, Bathrooms and Basement with specs and honest notes; Systems; Character and quirks; and "Good to know" for known conditions — grouped, scannable, answered items only. The same data feeds the channel-kit ad templates (1.4) and the Fair Housing copy check.
+
+**Sizing and schedule.** 1.1 and 1.2 are both large now. Stage 0 finished on Oct 4, so Stage 1 starts immediately and has about six weeks instead of four, at no cost to the later dates.
+
+**Done when:** you can describe 325 44th Street's kitchen, bathroom, basement and quirks in about twenty minutes on a phone; a floor plan per level shows on the public page with its room legend; and nothing marked "Not sure" appears publicly.
 
 ### 1.3 Share and discovery — **moved to Stage 4** (§6)
 
@@ -137,7 +222,7 @@ manual posting fast and consistent (channels and rules in §9). Until Stage 4 ev
 the public contact email); after it, ads also carry the listing link.
 
 - Pure, unit-tested formatters, one per channel in §9: Zillow Rental Manager (field-by-field cheat sheet mirroring its form), Facebook Marketplace, Craigslist, Zumper, and Facebook groups.
-- Share panel on the property page: copy buttons per channel, "download all photos as a zip" (every one of these sites needs photo files uploaded).
+- Share panel on the property page: copy buttons per channel, "download all photos as a zip" using the 2048 px export JPEGs from 1.1 (every one of these sites needs photo files uploaded).
 - Every formatter appends the pre-1978 lead-paint notice automatically when `requiresLeadPaintDisclosure(buildYear)` is true (it is, for this house), the **rental permit number** if the compliance tracker (1.6) says one applies and is marked "include in ads", and the Equal Housing Opportunity statement.
 - **Printable flyer** (print CSS): photo, key facts, `leasing@` address and phone. A QR code to the listing page arrives with Stage 4.
 - **Fair Housing copy check:** an advisory-only linter on headline, story and preview text that flags phrasing that can read as discriminatory in housing ads (familial status, religion, "perfect for young professionals", and similar). Warnings, never blocking. Old-house marketing copy leans flowery, so this earns its place. Needs the attorney's sanity check before it is presented as guidance.
@@ -165,7 +250,7 @@ Neither the schema nor the dashboard can currently record a property's legal-to-
 ### Stage 1 exit criteria (M1, Nov 15)
 
 **Dress rehearsal 1:** Brian enters 325 44th Street through the app's own forms (the first real test of the workflow) and it goes
-through compliance checklist → photos and rooms → draft preview → publish → copy-ready ads and photo zip for each launch
+through compliance checklist → converted photos, floor plans and room-by-room details → draft preview → publish → copy-ready ads and photo zip for each launch
 channel → a channel inquiry logged by hand and moved to "toured" → flyer printed. Playwright smoke test where automatable;
 lint, `tsc`, tests and CI green.
 
@@ -336,15 +421,15 @@ from a search; the rest come from my knowledge of AWS pricing. **Check them in t
 
 **Today's config, running ≈ $52/month:**
 
-| Piece                                                         | ≈ per month |
-| ------------------------------------------------------------- | ----------- |
-| RDS `db.t4g.micro`, single-AZ                                 | $11.70      |
-| RDS storage, 20 GB gp3                                        | $2.30       |
-| Application Load Balancer (base + light traffic)              | $17         |
-| Fargate task, 0.25 vCPU / 0.5 GB, one task                    | $9          |
-| Public IPv4 addresses (2 for the ALB, 1 for the task) × $3.65 | $11         |
-| Logs, SSM parameters, ECR, certificate                        | $1          |
-| **Total**                                                     | **≈ $52**   |
+| Piece                                                                                 | ≈ per month |
+| ------------------------------------------------------------------------------------- | ----------- |
+| RDS `db.t4g.micro`, single-AZ                                                         | $11.70      |
+| RDS storage, 20 GB gp3                                                                | $2.30       |
+| Application Load Balancer (base + light traffic)                                      | $17         |
+| Fargate task, 0.25 vCPU / 0.5 GB, one task (photo conversion may need 1 GB — see 1.1) | $9          |
+| Public IPv4 addresses (2 for the ALB, 1 for the task) × $3.65                         | $11         |
+| Logs, SSM parameters, ECR, certificate                                                | $1          |
+| **Total**                                                                             | **≈ $52**   |
 
 The infra README says ≈ $38–45; I think it leaves out the public-IPv4 charges AWS began billing in 2024. **Budget ≈ $52, and
 check Cost Explorer after the first month.**
@@ -429,6 +514,7 @@ applicant can pay).
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ----------------------------------------- |
 | **AWS hosting**                 | ≈ **$55/month** at production-grade essentials; ≈ $52 as it stands today. **$0 until the January deploy**                                  | You, from Jan 4. ≈ $160 through March       | My estimate from list prices (§12)        |
 | **Attorney reviews**            | Flat-fee lease review roughly **$300–$800**; hourly **$200–$500**. Expect several reviews (§17). Half-hour referral consult — confirm fee  | You, one-time, Dec–Jan                      | Search summary — rough range, not a quote |
+| **Photo-conversion memory**     | If the 1.1 spike shows it's needed, raise the Fargate task from 0.5 GB to 1 GB: ≈ **+$1.60/month**                                         | You, from Jan                               | My estimate from Fargate list prices      |
 | **SmartMove screening**         | About **$25 per applicant**; the applicant can pay                                                                                         | Applicant (default) or you, per applicant   | Roundup — verify                          |
 | **Stripe — bank debit (ACH)**   | **0.8%, capped at $5** per payment                                                                                                         | Deducted from each rent payment             | Fee roundups — verify at setup            |
 | **Stripe — card**               | **2.9% + 30¢** per payment                                                                                                                 | Deducted from each payment                  | Fee roundups — verify at setup            |
@@ -456,6 +542,9 @@ replace them with real numbers when you have them.
 | Personal liability from owning in Brian's own name                                 | Attorney and insurance-agent conversations (§10); not an app concern                                                                                                           |
 | Applicant PII (income documents, screening reports)                                | No SSN or ID images in the app; screening reports stay in SmartMove with the outcome copied in; retention schedule from the attorney                                           |
 | Lease, e-sign or payments take longer than February allows                         | Stage 5 interim fallbacks: external e-sign, manual ledger entries                                                                                                              |
+| Photo conversion is slow or runs out of memory in the small container              | The 1.1 spike measures it; limit input pixels and `sharp` concurrency; raise the task to 1 GB (≈ +$1.60/month)                                                                 |
+| Floor plans or room dimensions are read as exact                                   | Required "Approximate — not to scale" label on every plan; dimensions optional                                                                                                 |
+| "Known conditions" wording creates liability or alarm                              | Optional fields; "Not sure" is never shown; the attorney decides wording (§17)                                                                                                 |
 | HEIC photos fail through `sharp`                                                   | Spike before building 1.1; fall back to an `accept` restriction and a clear error                                                                                              |
 | Photos aren't ready by Feb 1 (for example, the property is occupied until March)   | Real photos are needed for the January data entry; this is Brian's logistics, not an app task                                                                                  |
 | Fair Housing linter gives false confidence                                         | Advisory only; wording says so; attorney's sanity check before it ships as guidance                                                                                            |
@@ -487,3 +576,4 @@ One short email to 2–3 attorneys. Ask for a flat fee per item, or one bundled 
 4. **Website:** privacy policy and terms of use for a site that collects applicant and tenant information.
 5. **Electronic signing:** whether in-app e-signature with an audit trail is acceptable for a residential lease, and how long to retain signed documents and applicant records.
 6. **Questions:** does Pittsburgh require a rental permit or lead inspection for this house (and get that in writing); what is the status of the City's lead ordinance; and is an LLC worth considering for later houses.
+7. **Known conditions:** which conditions the listing should state and how (lead water line, asbestos, past water intrusion or mold, radon results, knob-and-tube wiring), and whether the floor-plan "approximate" label is enough.
