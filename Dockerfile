@@ -47,4 +47,8 @@ RUN mkdir -p /data/storage && chown -R nextjs:nodejs /data
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
+# Next's standalone server binds to $HOSTNAME, which Docker sets to the container
+# id — making `localhost` (and the compose healthcheck) unreachable. Bind all
+# interfaces instead.
+ENV HOSTNAME=0.0.0.0
 CMD ["node", "server.js"]

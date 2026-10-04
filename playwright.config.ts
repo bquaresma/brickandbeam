@@ -9,23 +9,30 @@ const PORT = 3100;
 
 export default defineConfig({
   testDir: "./e2e",
-  globalSetup: "./e2e/global-setup.ts",
+  // E2E_BASE_URL points the suite at an already-running stack (for example the
+  // production-like Docker stack) instead of starting a dev server.
+  globalSetup: process.env.E2E_BASE_URL ? undefined : "./e2e/global-setup.ts",
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: "list",
-  use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },
-  webServer: {
-    command: `npx next dev -p ${PORT}`,
-    url: `http://localhost:${PORT}/api/health`,
-    reuseExistingServer: false,
-    timeout: 120_000,
-    env: {
-      DATABASE_URL,
-      AUTH_SECRET: "e2e-only-secret",
-      AUTH_URL: `http://localhost:${PORT}`,
-      AUTH_TRUST_HOST: "true",
-      NEXT_PUBLIC_MAPBOX_TOKEN: "",
-    },
+  use: {
+    baseURL: process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`,
+    trace: "retain-on-failure",
   },
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : {
+        command: `npx next dev -p ${PORT}`,
+        url: `http://localhost:${PORT}/api/health`,
+        reuseExistingServer: false,
+        timeout: 120_000,
+        env: {
+          DATABASE_URL,
+          AUTH_SECRET: "e2e-only-secret",
+          AUTH_URL: `http://localhost:${PORT}`,
+          AUTH_TRUST_HOST: "true",
+          NEXT_PUBLIC_MAPBOX_TOKEN: "",
+        },
+      },
 });

@@ -76,19 +76,20 @@ migrations and re-seeds it — it **deletes all local data**.
 
 ## Useful scripts
 
-| Script                 | What it does                           |
-| ---------------------- | -------------------------------------- |
-| `npm run dev`          | Start the dev server                   |
-| `npm run build`        | Production build                       |
-| `npm run lint`         | ESLint                                 |
-| `npm run format`       | Format with Prettier                   |
-| `npm run format:check` | Check formatting without writing       |
-| `npm run db:migrate`   | `prisma migrate dev`                   |
-| `npm run db:studio`    | Open Prisma Studio (visual DB browser) |
-| `npm run db:seed`      | Add fictional sample data (idempotent) |
-| `npm run db:reset`     | Rebuild the dev DB from migrations     |
-| `npm test`             | Unit tests (Vitest)                    |
-| `npm run test:e2e`     | Browser smoke test (Playwright)        |
+| Script                      | What it does                                       |
+| --------------------------- | -------------------------------------------------- |
+| `npm run dev`               | Start the dev server                               |
+| `npm run build`             | Production build                                   |
+| `npm run lint`              | ESLint                                             |
+| `npm run format`            | Format with Prettier                               |
+| `npm run format:check`      | Check formatting without writing                   |
+| `npm run db:migrate`        | `prisma migrate dev`                               |
+| `npm run db:studio`         | Open Prisma Studio (visual DB browser)             |
+| `npm run db:seed`           | Add fictional sample data (idempotent)             |
+| `npm run db:reset`          | Rebuild the dev DB from migrations                 |
+| `npm test`                  | Unit tests (Vitest)                                |
+| `npm run test:e2e`          | Browser smoke test (Playwright)                    |
+| `npm run photos:regenerate` | Rebuild every photo's served sizes from its master |
 
 The smoke test uses its own `brickandbeam_test` database (override with `TEST_DATABASE_URL`) and
 starts its own dev server on port 3100. First run needs `npx playwright install chromium`.
@@ -153,8 +154,27 @@ npm run docker:prod        # docker compose --profile prod up --build
 
 It serves at [http://localhost:8080](http://localhost:8080) (so it can run next to `npm run dev`
 on 3000) and reads `AUTH_SECRET` and `NEXT_PUBLIC_MAPBOX_TOKEN` from `.env`. It shares the dev
-database, and uploaded files live in the `app_storage` volume. Stop just the app with
+database by default (set `STACK_DATABASE_URL` to point it elsewhere), and uploaded files live in the
+`app_storage` volume. Stop just the app with
 `docker compose --profile prod stop app`; plain `docker compose up -d` still starts only Postgres.
+
+## Photos
+
+Landlords upload photos on the listing edit page. Each upload goes through
+`src/lib/images`: it is checked by its first bytes (JPEG, PNG and WebP are accepted; iPhone HEIC is
+not — the server has no HEVC decoder, so the uploader is told how to export a JPEG), rotated,
+converted to sRGB, stripped of all metadata including GPS, and stored as a private **master**
+(never served). From the master it generates, once:
+
+- a display ladder — 400, 800, 1200 and 1600 px wide in AVIF, WebP and JPEG
+- a 1200×630 share crop and a 2048 px JPEG export for the listing-site ad kit
+- a tiny blurred placeholder stored on the row
+
+Floor plans use a lossless profile (WebP + PNG, up to 2400 px). Variants are served by
+`/media/[...key]` with immutable caching (draft listings: owner only; masters: never) and rendered
+as responsive `<picture>` elements. Conversion runs one photo at a time because it is CPU-heavy;
+expect roughly 7–14 s per 12-megapixel photo on the small production task. After changing presets
+in `src/lib/images/process.ts`, bump `PRESET_VERSION` and run `npm run photos:regenerate`.
 
 ## File storage
 

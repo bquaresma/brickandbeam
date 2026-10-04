@@ -110,6 +110,11 @@ can start any time. Share/discovery work (old 1.3) moves to Stage 4, when a publ
 
 ### 1.1 Photo pipeline and conversion (L)
 
+**Status (Oct 4): built and tested** — upload route, conversion, `/media` serving, landlord photo manager, public gallery and
+lightbox, regenerate command, and an end-to-end suite that also passes against the production Docker image. **Two checks
+remain:** how an iPhone behaves with the HEIC `accept` restriction (`scripts/heic-device-test`), and the size budgets with real
+photos of the house. Not yet built here: floor-plan upload UI (1.2) and the `?src` link tracking (Stage 4).
+
 Every upload is converted once into a set of sizes and formats built for the web and for phones. Landlords upload whatever
 the camera produced; visitors get small, sharp, fast images.
 
