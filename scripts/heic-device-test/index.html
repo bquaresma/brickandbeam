@@ -1,0 +1,104 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HEIC device test</title>
+<style>
+  body {
+    font:
+      16px/1.4 system-ui,
+      sans-serif;
+    margin: 16px;
+    max-width: 640px;
+  }
+  section {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 16px 0;
+  }
+  h2 {
+    font-size: 16px;
+    margin: 0 0 8px;
+  }
+  code {
+    background: #eee;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  pre {
+    white-space: pre-wrap;
+    margin: 8px 0 0;
+    background: #f6f6f6;
+    padding: 8px;
+    border-radius: 6px;
+    min-height: 1.4em;
+  }
+</style>
+<h1>HEIC device test</h1>
+<p>
+  On your iPhone, pick the <strong>same recent camera photo</strong> in each box. The page
+  reports what the browser actually handed over: the type it claims, and the real file
+  format read from the first bytes. Nothing is uploaded anywhere.
+</p>
+
+<section>
+  <h2>A — <code>accept="image/*"</code></h2>
+  <input type="file" accept="image/*" data-out="a" />
+  <pre id="a">(no file yet)</pre>
+</section>
+<section>
+  <h2>B — <code>accept="image/jpeg,image/png,image/webp"</code></h2>
+  <input type="file" accept="image/jpeg,image/png,image/webp" data-out="b" />
+  <pre id="b">(no file yet)</pre>
+</section>
+<section>
+  <h2>C — also lists <code>image/heic,image/heif</code></h2>
+  <input
+    type="file"
+    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+    data-out="c"
+  />
+  <pre id="c">(no file yet)</pre>
+</section>
+
+<script>
+  const HEIC_BRANDS = ["heic", "heix", "hevc", "hevx", "heim", "heis", "mif1", "msf1"];
+  const ascii = (b, from, to) => String.fromCharCode(...b.slice(from, to));
+
+  function sniff(b) {
+    if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "JPEG";
+    if (b[0] === 0x89 && ascii(b, 1, 4) === "PNG") return "PNG";
+    if (ascii(b, 0, 4) === "RIFF" && ascii(b, 8, 12) === "WEBP") return "WebP";
+    if (ascii(b, 4, 8) === "ftyp") {
+      const brand = ascii(b, 8, 12);
+      return HEIC_BRANDS.includes(brand)
+        ? `HEIC/HEIF (brand ${brand})`
+        : `ISO media (brand ${brand})`;
+    }
+    return "unknown";
+  }
+
+  document.querySelectorAll("input[type=file]").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const out = document.getElementById(input.dataset.out);
+      const file = input.files[0];
+      if (!file) {
+        out.textContent = "(no file)";
+        return;
+      }
+      const head = new Uint8Array(await file.slice(0, 32).arrayBuffer());
+      let decodes = "yes";
+      try {
+        (await createImageBitmap(file)).close();
+      } catch {
+        decodes = "NO";
+      }
+      out.textContent =
+        `name:     ${file.name}\n` +
+        `claimed:  ${file.type || "(empty)"}\n` +
+        `real:     ${sniff(head)}\n` +
+        `size:     ${(file.size / 1048576).toFixed(2)} MB\n` +
+        `browser can decode: ${decodes}`;
+    });
+  });
+</script>
