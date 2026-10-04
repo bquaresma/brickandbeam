@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
 import { ListingForm } from "@/components/listing-form";
+import { PhotoManager } from "@/components/photo-manager";
+import { toPhotoView } from "@/lib/images/view";
 import { updateListing } from "@/lib/actions/listings";
 
 export default async function EditListingPage({
@@ -15,7 +17,11 @@ export default async function EditListingPage({
 
   const unit = await prisma.unit.findFirst({
     where: { id: unitId, propertyId: id, property: { landlordId: user.id } },
-    include: { listing: true },
+    include: {
+      listing: {
+        include: { photos: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
+      },
+    },
   });
   if (!unit?.listing) notFound();
 
@@ -31,6 +37,10 @@ export default async function EditListingPage({
           submitLabel="Save changes"
         />
       </div>
+      <PhotoManager
+        listingId={unit.listing.id}
+        initialPhotos={unit.listing.photos.map(toPhotoView)}
+      />
     </div>
   );
 }

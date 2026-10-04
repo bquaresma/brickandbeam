@@ -8,6 +8,8 @@ import { createLead } from "@/lib/actions/leads";
 import { auth } from "@/lib/auth";
 import type { GeocodeResult } from "@/lib/geocode";
 import { FormWithError, SubmitButton } from "@/components/action-form";
+import { ListingGallery } from "@/components/listing-gallery";
+import { toPhotoView } from "@/lib/images/view";
 import {
   BedIcon,
   BathIcon,
@@ -145,6 +147,10 @@ async function getListing(listingId: string) {
           utilities: true,
         },
       },
+      photos: {
+        where: { kind: "PHOTO" },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      },
     },
   });
 
@@ -253,23 +259,21 @@ export default async function PublicListingPage({
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-10">
-        {listing.heroPhotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={listing.heroPhotoUrl}
-            alt={listing.headline || unit.name}
-            className="aspect-video w-full rounded-xl border object-cover shadow-sm"
-            style={{ borderColor: `${TIMBER}26` }}
-          />
-        ) : (
-          <div
-            className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-white"
-            style={{ borderColor: `${TIMBER}4d`, color: `${TIMBER}99` }}
-          >
-            <HomeIcon className="h-8 w-8" />
-            <span className="text-sm">No photo yet</span>
-          </div>
-        )}
+        <ListingGallery
+          photos={listing.photos.map(toPhotoView)}
+          legacyHeroUrl={listing.heroPhotoUrl}
+          fallbackAlt={listing.headline || unit.name}
+          borderColor={`${TIMBER}26`}
+          emptyState={
+            <div
+              className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-white"
+              style={{ borderColor: `${TIMBER}4d`, color: `${TIMBER}99` }}
+            >
+              <HomeIcon className="h-8 w-8" />
+              <span className="text-sm">No photo yet</span>
+            </div>
+          }
+        />
 
         <div
           className="mt-7 text-xs font-semibold tracking-wide uppercase"
