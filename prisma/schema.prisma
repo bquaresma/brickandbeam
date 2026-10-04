@@ -355,7 +355,8 @@ model Listing {
   status      ListingStatus @default(DRAFT)
   publishedAt DateTime?
 
-  leads Lead[]
+  leads  Lead[]
+  photos ListingPhoto[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -387,4 +388,64 @@ model Lead {
   createdAt DateTime @default(now())
 
   @@map("leads")
+}
+
+enum PhotoKind {
+  PHOTO
+  FLOOR_PLAN
+}
+
+// What a photo shows. Drives grouping in the gallery and which pictures the
+// channel-kit ads pick.
+enum PhotoArea {
+  EXTERIOR
+  LIVING
+  KITCHEN
+  BATHROOM
+  BEDROOM
+  BASEMENT
+  ATTIC
+  OUTDOOR
+  DETAIL
+  OTHER
+}
+
+// An uploaded picture. The upload is normalized into a private "master" and
+// converted once into the sizes and formats the site serves (see
+// src/lib/images). The database stores storage keys, never URLs.
+model ListingPhoto {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  kind PhotoKind @default(PHOTO)
+  area PhotoArea @default(OTHER)
+
+  // Which floor a floor plan (or a photo) belongs to, e.g. "Basement",
+  // "First floor", "Second floor", "Attic".
+  level String?
+
+  caption String?
+  altText String?
+
+  sortOrder Int     @default(0)
+  isHero    Boolean @default(false)
+
+  // Storage key of the metadata-stripped, sRGB master. Never served publicly.
+  masterKey   String
+  contentType String
+  bytes       Int
+  width       Int
+  height      Int
+
+  // Tiny blurred preview as a data URI, shown while the real image loads.
+  placeholder String?
+
+  // Every generated file: [{ preset, width, height, format, key, bytes }].
+  variants Json
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId, sortOrder])
+  @@map("listing_photos")
 }
