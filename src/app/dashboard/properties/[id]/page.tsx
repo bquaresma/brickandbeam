@@ -114,6 +114,12 @@ export default async function PropertyDetailPage({
                 </p>
                 <div className="flex gap-2">
                   <Link
+                    href={`/dashboard/properties/${property.id}/units/${wholeHouseUnit.id}/walkthrough`}
+                    className="rounded-md bg-[#B1502F] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#8F3F25]"
+                  >
+                    House details
+                  </Link>
+                  <Link
                     href={`/dashboard/properties/${property.id}/units/${wholeHouseUnit.id}/details`}
                     className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
                   >
@@ -229,6 +235,12 @@ export default async function PropertyDetailPage({
                       )}
                     </div>
                     <div className="flex gap-2">
+                      <Link
+                        href={`/dashboard/properties/${property.id}/units/${unit.id}/walkthrough`}
+                        className="rounded-md bg-[#B1502F] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#8F3F25]"
+                      >
+                        House details
+                      </Link>
                       <Link
                         href={`/dashboard/properties/${property.id}/units/${unit.id}/details`}
                         className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"

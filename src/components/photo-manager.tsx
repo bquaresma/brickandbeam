@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 
 import { deletePhoto, movePhoto, setHeroPhoto, updatePhoto } from "@/lib/actions/photos";
 import { HEIC_MESSAGE } from "@/lib/images/formats";
+import { IMAGE_ACCEPT, looksLikeHeic, sendFile } from "@/lib/upload-client";
 import {
   altFor,
   AREA_LABELS,
@@ -20,37 +21,6 @@ type Upload = {
   status: "queued" | "uploading" | "error";
   error?: string;
 };
-
-const ACCEPT = "image/jpeg,image/png,image/webp";
-const looksLikeHeic = (file: File) =>
-  /image\/hei[cf]/.test(file.type) || /\.(heic|heif)$/i.test(file.name);
-
-// XHR rather than fetch so each file reports real upload progress.
-function sendFile(
-  file: File,
-  fields: Record<string, string>,
-  onProgress: (fraction: number) => void,
-): Promise<{ photo?: PhotoView; error?: string }> {
-  return new Promise((resolve) => {
-    const body = new FormData();
-    body.set("file", file);
-    for (const [key, value] of Object.entries(fields)) body.set(key, value);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/uploads");
-    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
-    xhr.onerror = () =>
-      resolve({ error: "The upload was interrupted. Check your connection." });
-    xhr.onload = () => {
-      try {
-        resolve(JSON.parse(xhr.responseText));
-      } catch {
-        resolve({ error: "The server sent an unexpected response." });
-      }
-    };
-    xhr.send(body);
-  });
-}
 
 export function PhotoManager({
   listingId,
@@ -168,7 +138,7 @@ export function PhotoManager({
           <input
             ref={inputRef}
             type="file"
-            accept={ACCEPT}
+            accept={IMAGE_ACCEPT}
             multiple
             className="sr-only"
             aria-label="Choose photos to upload"

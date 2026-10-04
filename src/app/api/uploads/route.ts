@@ -97,6 +97,18 @@ export async function POST(request: Request) {
         variants: stored.variants,
       },
     });
+    // One floor plan per level: a new upload replaces the old one.
+    if (kind === "FLOOR_PLAN" && level) {
+      const replaced = await prisma.listingPhoto.findMany({
+        where: { listingId, kind: "FLOOR_PLAN", level, id: { not: photoId } },
+      });
+      for (const old of replaced) {
+        await prisma.listingPhoto.delete({ where: { id: old.id } });
+        await deleteStored(old).catch((e) =>
+          console.error("Removing replaced plan failed", e),
+        );
+      }
+    }
     return json({ photo: toPhotoView(row) }, 201);
   } catch (error) {
     await deleteStored(stored).catch(() => undefined);

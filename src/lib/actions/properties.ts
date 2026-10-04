@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
 import { EMAIL_RE, normalizeEmail } from "@/lib/email";
 import { geocodeAddress } from "@/lib/geocode";
+import { PROPERTY_STYLES } from "@/lib/details/catalog";
 import type { ActionResult } from "@/lib/actions/action-result";
 
 type PropertyData = {
@@ -20,6 +21,7 @@ type PropertyData = {
   publicContactEmail: string | null;
   buildYear: number;
   neighborhoodBlurb: string | null;
+  propertyStyle: string | null;
   isWholeHouse: boolean;
 };
 
@@ -37,6 +39,10 @@ function parsePropertyForm(
   const buildYearRaw = String(formData.get("buildYear") ?? "").trim();
   const buildYear = Number.parseInt(buildYearRaw, 10);
   const neighborhoodBlurb = String(formData.get("neighborhoodBlurb") ?? "").trim();
+  const styleRaw = String(formData.get("propertyStyle") ?? "");
+  const propertyStyle = PROPERTY_STYLES.some((s) => s.value === styleRaw)
+    ? styleRaw
+    : null;
   const isWholeHouse = formData.get("isWholeHouse") === "on";
 
   if (!addressLine1 || !city || !state || !zip) {
@@ -65,6 +71,7 @@ function parsePropertyForm(
       publicContactEmail: publicContactEmail || null,
       buildYear,
       neighborhoodBlurb: neighborhoodBlurb || null,
+      propertyStyle,
       isWholeHouse,
     },
   };

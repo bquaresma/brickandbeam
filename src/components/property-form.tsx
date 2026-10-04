@@ -1,6 +1,7 @@
 import { FormWithError, SubmitButton } from "@/components/action-form";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { StreetViewPreviewButton } from "@/components/street-view-preview-button";
+import { PROPERTY_STYLES } from "@/lib/details/catalog";
 import type { ActionResult } from "@/lib/actions/action-result";
 
 type PropertyFormValues = {
@@ -14,6 +15,7 @@ type PropertyFormValues = {
   publicContactEmail?: string | null;
   buildYear?: number;
   neighborhoodBlurb?: string | null;
+  propertyStyle?: string | null;
   isWholeHouse?: boolean;
 };
 
@@ -132,6 +134,28 @@ export function PropertyForm({
           Properties built before 1978 trigger the federal lead-paint disclosure
           requirement.
         </p>
+      </div>
+
+      <div>
+        <label
+          htmlFor="propertyStyle"
+          className="block text-sm font-medium text-stone-700"
+        >
+          Style of house (optional)
+        </label>
+        <select
+          id="propertyStyle"
+          name="propertyStyle"
+          defaultValue={defaultValues?.propertyStyle ?? ""}
+          className="mt-1 block w-full max-w-xs rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
+        >
+          <option value="">—</option>
+          {PROPERTY_STYLES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
