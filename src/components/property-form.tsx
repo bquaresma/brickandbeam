@@ -11,6 +11,7 @@ type PropertyFormValues = {
   state?: string;
   zip?: string;
   alleyAddress?: string | null;
+  publicContactEmail?: string | null;
   buildYear?: number;
   neighborhoodBlurb?: string | null;
   isWholeHouse?: boolean;
@@ -48,7 +49,7 @@ export function PropertyForm({
         <input
           type="checkbox"
           name="isWholeHouse"
-          defaultChecked={defaultValues?.isWholeHouse ?? false}
+          defaultChecked={defaultValues?.isWholeHouse ?? true}
           className="mt-0.5 rounded border-stone-300"
         />
         <span>
@@ -130,6 +131,28 @@ export function PropertyForm({
         <p className="mt-1 text-xs text-stone-500">
           Properties built before 1978 trigger the federal lead-paint disclosure
           requirement.
+        </p>
+      </div>
+
+      <div>
+        <label
+          htmlFor="publicContactEmail"
+          className="block text-sm font-medium text-stone-700"
+        >
+          Public contact email
+        </label>
+        <input
+          id="publicContactEmail"
+          name="publicContactEmail"
+          type="email"
+          defaultValue={
+            defaultValues?.publicContactEmail ?? "leasing@brickandbeamrentals.com"
+          }
+          className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-stone-500">
+          Shown on the public listing. Your sign-in email is never shown publicly. Leave
+          blank to take inquiries through the listing form only.
         </p>
       </div>
 

@@ -5,7 +5,8 @@ import { Spectral } from "next/font/google";
 import { prisma } from "@/lib/prisma";
 import { requiresLeadPaintDisclosure } from "@/lib/compliance";
 import { createLead } from "@/lib/actions/leads";
-import { geocodeAddress, type GeocodeResult } from "@/lib/geocode";
+import { auth } from "@/lib/auth";
+import type { GeocodeResult } from "@/lib/geocode";
 import { FormWithError, SubmitButton } from "@/components/action-form";
 import {
   BedIcon,
@@ -136,7 +137,7 @@ async function getListing(listingId: string) {
       unit: {
         include: {
           property: {
-            include: { landlord: { select: { name: true, email: true } } },
+            include: { landlord: { select: { name: true } } },
           },
           amenities: { orderBy: { createdAt: "asc" } },
           petPolicies: { orderBy: { createdAt: "asc" } },
@@ -147,8 +148,16 @@ async function getListing(listingId: string) {
     },
   });
 
-  if (!listing || listing.status !== "PUBLISHED") return null;
-  return listing;
+  if (!listing) return null;
+  if (listing.status === "PUBLISHED") return listing;
+
+  // Drafts and archived listings are visible only to the owning landlord, so
+  // they can preview exactly what the public will see.
+  const session = await auth();
+  if (session?.user?.id && session.user.id === listing.unit.property.landlordId) {
+    return listing;
+  }
+  return null;
 }
 
 export async function generateMetadata({
@@ -183,10 +192,17 @@ export default async function PublicListingPage({
   const leadPaintGate = requiresLeadPaintDisclosure(property.buildYear);
 
   const fullAddress = `${property.addressLine1}, ${property.city}, ${property.state} ${property.zip}`;
-  const [frontGeo, alleyGeo] = await Promise.all([
-    geocodeAddress(fullAddress),
-    property.alleyAddress ? geocodeAddress(property.alleyAddress) : Promise.resolve(null),
-  ]);
+
+  // Coordinates are geocoded once when the property is saved, so rendering
+  // the page never calls the geocoder.
+  const frontGeo: GeocodeResult | null =
+    property.latitude != null && property.longitude != null
+      ? { lat: property.latitude, lng: property.longitude }
+      : null;
+  const alleyGeo: GeocodeResult | null =
+    property.alleyLatitude != null && property.alleyLongitude != null
+      ? { lat: property.alleyLatitude, lng: property.alleyLongitude }
+      : null;
 
   const appliances = unit.amenities.filter((a) => a.category === "APPLIANCE");
   const amenities = unit.amenities.filter((a) => a.category === "AMENITY");
@@ -201,8 +217,8 @@ export default async function PublicListingPage({
   const mailBody = encodeURIComponent(
     `Hi, I'm interested in scheduling a showing for ${listing.headline || unit.name} at ${property.addressLine1}, ${property.city}, ${property.state}.`,
   );
-  const mailtoHref = property.landlord.email
-    ? `mailto:${property.landlord.email}?subject=${mailSubject}&body=${mailBody}`
+  const mailtoHref = property.publicContactEmail
+    ? `mailto:${property.publicContactEmail}?subject=${mailSubject}&body=${mailBody}`
     : null;
 
   return (
@@ -210,6 +226,15 @@ export default async function PublicListingPage({
       className={`${spectral.variable} min-h-screen`}
       style={{ backgroundColor: PLASTER, backgroundImage: GRAIN_BG }}
     >
+      {listing.status !== "PUBLISHED" && (
+        <div
+          role="status"
+          className="bg-amber-100 px-4 py-2 text-center text-sm font-medium text-amber-900"
+        >
+          {listing.status === "DRAFT" ? "Draft" : "Archived"} — not public. Only you can
+          see this page.
+        </div>
+      )}
       <header className="border-b bg-white" style={{ borderColor: `${TIMBER}26` }}>
         <div className="mx-auto flex max-w-3xl items-baseline justify-between px-4 py-5">
           <span
@@ -674,8 +699,17 @@ export default async function PublicListingPage({
               >
                 <input
                   type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  className="hidden"
+                />
+                <input
+                  type="text"
                   name="name"
                   required
+                  maxLength={100}
                   placeholder="Your name"
                   className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
                   style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}
@@ -684,6 +718,7 @@ export default async function PublicListingPage({
                   type="email"
                   name="email"
                   required
+                  maxLength={254}
                   placeholder="Email"
                   className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
                   style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}
@@ -691,6 +726,7 @@ export default async function PublicListingPage({
                 <input
                   type="tel"
                   name="phone"
+                  maxLength={40}
                   placeholder="Phone (optional)"
                   className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
                   style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}
@@ -698,6 +734,7 @@ export default async function PublicListingPage({
                 <textarea
                   name="message"
                   rows={3}
+                  maxLength={2000}
                   placeholder="I'd like to see this place…"
                   className="rounded-md border px-3 py-2.5 text-sm text-white placeholder-stone-400 focus:outline-none"
                   style={{ backgroundColor: "#2f2f2f", borderColor: "#404040" }}

@@ -53,13 +53,15 @@ export default async function PropertyDetailPage({
           <p className="mt-1 text-sm text-stone-500">Built {property.buildYear}</p>
         </div>
         <div className="flex gap-2">
-          {wholeHouseUnit?.listing?.status === "PUBLISHED" && (
+          {wholeHouseUnit?.listing && (
             <Link
               href={`/listings/${wholeHouseUnit.listing.id}`}
               target="_blank"
               className="rounded-md bg-[#B1502F] px-3 py-2 text-sm font-medium text-white hover:bg-[#8F3F25]"
             >
-              View listing
+              {wholeHouseUnit.listing.status === "PUBLISHED"
+                ? "View listing"
+                : "Preview listing"}
             </Link>
           )}
           <Link
@@ -269,13 +271,15 @@ export default async function PropertyDetailPage({
                           </p>
                         </div>
                         <div className="flex shrink-0 gap-2">
-                          {unit.listing.status === "PUBLISHED" && (
+                          {unit.listing && (
                             <Link
                               href={`/listings/${unit.listing.id}`}
                               target="_blank"
                               className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-white"
                             >
-                              View public page
+                              {unit.listing.status === "PUBLISHED"
+                                ? "View public page"
+                                : "Preview"}
                             </Link>
                           )}
                           <Link

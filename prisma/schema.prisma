@@ -107,6 +107,17 @@ model Property {
   // the public listing, alongside the front-address one.
   alleyAddress String?
 
+  // Coordinates geocoded once at save time (see geocodeAddress) so the public
+  // listing never has to call the geocoder per page view.
+  latitude       Float?
+  longitude      Float?
+  alleyLatitude  Float?
+  alleyLongitude Float?
+
+  // Contact address shown publicly on the listing. Deliberately separate from
+  // the landlord's login email so that never appears in public HTML.
+  publicContactEmail String?
+
   // A whole-house rental (not subdivided) skips the multi-unit UI: exactly
   // one Unit is created automatically to hold its Listing, and the
   // dashboard shows a single "Listing" panel instead of a Units list.

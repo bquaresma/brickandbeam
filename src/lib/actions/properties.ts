@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
+import { EMAIL_RE, normalizeEmail } from "@/lib/email";
+import { geocodeAddress } from "@/lib/geocode";
 import type { ActionResult } from "@/lib/actions/action-result";
 
 type PropertyData = {
@@ -15,6 +17,7 @@ type PropertyData = {
   state: string;
   zip: string;
   alleyAddress: string | null;
+  publicContactEmail: string | null;
   buildYear: number;
   neighborhoodBlurb: string | null;
   isWholeHouse: boolean;
@@ -30,6 +33,7 @@ function parsePropertyForm(
   const state = String(formData.get("state") ?? "").trim();
   const zip = String(formData.get("zip") ?? "").trim();
   const alleyAddress = String(formData.get("alleyAddress") ?? "").trim();
+  const publicContactEmail = normalizeEmail(formData.get("publicContactEmail"));
   const buildYearRaw = String(formData.get("buildYear") ?? "").trim();
   const buildYear = Number.parseInt(buildYearRaw, 10);
   const neighborhoodBlurb = String(formData.get("neighborhoodBlurb") ?? "").trim();
@@ -37,6 +41,9 @@ function parsePropertyForm(
 
   if (!addressLine1 || !city || !state || !zip) {
     return { error: "Address, city, state, and zip are required." };
+  }
+  if (publicContactEmail && !EMAIL_RE.test(publicContactEmail)) {
+    return { error: "Enter a valid public contact email, or leave it blank." };
   }
   if (
     !Number.isInteger(buildYear) ||
@@ -55,10 +62,25 @@ function parsePropertyForm(
       state,
       zip,
       alleyAddress: alleyAddress || null,
+      publicContactEmail: publicContactEmail || null,
       buildYear,
       neighborhoodBlurb: neighborhoodBlurb || null,
       isWholeHouse,
     },
+  };
+}
+
+// Geocoded once per save so the public listing never calls the geocoder.
+async function geocodeProperty(data: PropertyData) {
+  const [front, alley] = await Promise.all([
+    geocodeAddress(`${data.addressLine1}, ${data.city}, ${data.state} ${data.zip}`),
+    data.alleyAddress ? geocodeAddress(data.alleyAddress) : Promise.resolve(null),
+  ]);
+  return {
+    latitude: front?.lat ?? null,
+    longitude: front?.lng ?? null,
+    alleyLatitude: alley?.lat ?? null,
+    alleyLongitude: alley?.lng ?? null,
   };
 }
 
@@ -70,6 +92,7 @@ export async function createProperty(formData: FormData): Promise<ActionResult> 
   const property = await prisma.property.create({
     data: {
       ...parsed.data,
+      ...(await geocodeProperty(parsed.data)),
       landlordId: user.id,
       // Whole-house properties skip the multi-unit UI, but the schema still
       // needs one Unit to hang the Listing off of — create it now so the
@@ -102,6 +125,7 @@ export async function updateProperty(
     where: { id: propertyId },
     data: {
       ...parsed.data,
+      ...(await geocodeProperty(parsed.data)),
       units: needsDefaultUnit ? { create: { name: "Whole house" } } : undefined,
     },
   });
