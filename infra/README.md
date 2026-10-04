@@ -39,10 +39,21 @@ no script for it, and re-creating them is rare enough that a script isn't worth 
 
 ## Day-to-day: GitHub Actions
 
-Pushing to `main` runs [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml), which assumes the
-`brickandbeam-github-deploy` role, applies both stacks, builds and pushes the Docker image, and runs
-`prisma migrate deploy` against the new image before/alongside the rolling ECS deployment. Nothing needs to
-run locally for normal deploys.
+Deploys are manual: Actions → **Deploy** → Run workflow
+([`deploy.yml`](../.github/workflows/deploy.yml)). It assumes the `brickandbeam-github-deploy` role, applies
+both stacks, builds and pushes the Docker image, and runs `prisma migrate deploy`. Pushes to `main` only run
+CI — they do not deploy. Nothing needs to run locally.
+
+## Pausing AWS to save money
+
+Actions → **Teardown** → Run workflow ([`teardown.yml`](../.github/workflows/teardown.yml)). It destroys the
+ALB/ECS stack and the RDS database (no final snapshot — the data is lost), keeping the VPC, security groups,
+ACM cert, ECR repo and SSM secrets, which cost ~nothing. Because the cert survives, no DNS re-validation is
+needed. Running Deploy again recreates everything (first run ~10 min for RDS) on a fresh database.
+
+While paused, the Porkbun apex ALIAS and `www` CNAME point at a deleted ALB hostname (the site is down).
+After the next Deploy the ALB gets a new hostname: update both records to it
+(`aws elbv2 describe-load-balancers --names brickandbeam --query 'LoadBalancers[0].DNSName'`).
 
 ## Running Terraform locally (optional, for debugging)
 
@@ -69,21 +80,3 @@ requires re-validation.
      name, or route through Porkbun's Cloudflare connection if ALIAS isn't supported for this zone.
    - `www.brickandbeamrentals.com`: a plain CNAME to the ALB's DNS name.
 4. Existing "URL Forwarding" on the domain should be turned off — it'll conflict with the new records.
-
-## Tearing down to save money
-
-```bash
-cd infra/app
-terraform destroy
-```
-
-This removes the ALB, ECS service, and task definitions (~$25–30/mo saved) without touching the database or
-its data. Bring it back with `terraform apply` in the same directory — it re-points at the existing RDS
-instance and ECR image, no rebuild needed.
-
-Only destroy `infra/data` if you want to delete the database itself. Take a manual snapshot first if you
-might want the data back:
-
-```bash
-aws rds create-db-snapshot --db-instance-identifier brickandbeam --db-snapshot-identifier brickandbeam-final
-```
