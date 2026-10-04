@@ -41,6 +41,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 RUN npm install --no-save prisma@$(node -p "require('./package.json').dependencies.prisma")
+# Local file storage root for STORAGE_DRIVER=local. Created before dropping root
+# so a mounted named volume inherits the nextjs ownership.
+RUN mkdir -p /data/storage && chown -R nextjs:nodejs /data
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000

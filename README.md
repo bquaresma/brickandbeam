@@ -142,6 +142,20 @@ sign-in/sign-up and dashboard pages use the related "Hearth" palette (`HEARTH` i
 - `/dashboard/**` is gated by `src/proxy.ts`; individual server actions in `src/lib/actions/`
   additionally scope every query to the signed-in landlord's own records
 
+## Production-like stack in Docker
+
+To run the exact image the Deploy workflow builds (standalone production build, non-root user,
+migrations as a one-off task first), alongside the same Postgres:
+
+```bash
+npm run docker:prod        # docker compose --profile prod up --build
+```
+
+It serves at [http://localhost:8080](http://localhost:8080) (so it can run next to `npm run dev`
+on 3000) and reads `AUTH_SECRET` and `NEXT_PUBLIC_MAPBOX_TOKEN` from `.env`. It shares the dev
+database, and uploaded files live in the `app_storage` volume. Stop just the app with
+`docker compose --profile prod stop app`; plain `docker compose up -d` still starts only Postgres.
+
 ## File storage
 
 User files go through the storage adapter in `src/lib/adapters/storage` — the database stores

@@ -16,5 +16,55 @@ services:
       timeout: 5s
       retries: 5
 
+  # --- Production-like stack -------------------------------------------------
+  # `docker compose --profile prod up --build` runs the same image the Deploy
+  # workflow builds: a standalone production build as a non-root user, with
+  # migrations run as a one-off task first. Reads AUTH_SECRET and
+  # NEXT_PUBLIC_MAPBOX_TOKEN from .env. Served at http://localhost:8080.
+  migrate:
+    profiles: ["prod"]
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN:-}
+    image: brickandbeam-app
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: postgresql://brickandbeam:brickandbeam@postgres:5432/brickandbeam
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    profiles: ["prod"]
+    image: brickandbeam-app
+    ports:
+      - "8080:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://brickandbeam:brickandbeam@postgres:5432/brickandbeam
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in .env}
+      AUTH_URL: http://localhost:8080
+      AUTH_TRUST_HOST: "true"
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_DIR: /data/storage
+    volumes:
+      - app_storage:/data/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
+  app_storage:
