@@ -123,6 +123,10 @@ model Property {
   // dashboard shows a single "Listing" panel instead of a Units list.
   isWholeHouse Boolean @default(false)
 
+  // Optional descriptor used in ad copy, e.g. "rowhouse", "victorian",
+  // "carriage-house". Values live in src/lib/details/catalog.ts.
+  propertyStyle String?
+
   // Drives the lead-paint disclosure gate: any property with buildYear < 1978
   // requires the Title X disclosure workflow before a lease is signed.
   buildYear Int
@@ -170,6 +174,12 @@ model Unit {
 
   // Freeform description of layout quirks, shown alongside `rooms`.
   layoutNotes String?
+
+  // Everything the guided walk-through collects about an older house: kitchen,
+  // bathrooms, basement, laundry, systems, character and quirks, known
+  // conditions, outdoors. Versioned JSON, validated against the field catalog in
+  // src/lib/details, so adding a question never needs a migration.
+  details Json?
 
   // Fields below mirror the Zillow Rental Listing feed's single-unit schema,
   // so a future syndication export doesn't require a data-model rewrite.
