@@ -13,6 +13,7 @@ type PropertyFormValues = {
   zip?: string;
   alleyAddress?: string | null;
   publicContactEmail?: string | null;
+  publicContactPhone?: string | null;
   buildYear?: number;
   neighborhoodBlurb?: string | null;
   propertyStyle?: string | null;
@@ -177,6 +178,27 @@ export function PropertyForm({
         <p className="mt-1 text-xs text-stone-500">
           Shown on the public listing. Your sign-in email is never shown publicly. Leave
           blank to take inquiries through the listing form only.
+        </p>
+      </div>
+
+      <div>
+        <label
+          htmlFor="publicContactPhone"
+          className="block text-sm font-medium text-stone-700"
+        >
+          Public phone (optional)
+        </label>
+        <input
+          id="publicContactPhone"
+          name="publicContactPhone"
+          type="tel"
+          autoComplete="off"
+          defaultValue={defaultValues?.publicContactPhone ?? ""}
+          className="mt-1 block w-full max-w-xs rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-[#B1502F] focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-stone-500">
+          Used in the ads and flyer you create, never shown on your account. Consider a
+          separate number for renting.
         </p>
       </div>
 

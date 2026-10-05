@@ -19,6 +19,7 @@ type PropertyData = {
   zip: string;
   alleyAddress: string | null;
   publicContactEmail: string | null;
+  publicContactPhone: string | null;
   buildYear: number;
   neighborhoodBlurb: string | null;
   propertyStyle: string | null;
@@ -36,6 +37,7 @@ function parsePropertyForm(
   const zip = String(formData.get("zip") ?? "").trim();
   const alleyAddress = String(formData.get("alleyAddress") ?? "").trim();
   const publicContactEmail = normalizeEmail(formData.get("publicContactEmail"));
+  const publicContactPhone = String(formData.get("publicContactPhone") ?? "").trim();
   const buildYearRaw = String(formData.get("buildYear") ?? "").trim();
   const buildYear = Number.parseInt(buildYearRaw, 10);
   const neighborhoodBlurb = String(formData.get("neighborhoodBlurb") ?? "").trim();
@@ -50,6 +52,9 @@ function parsePropertyForm(
   }
   if (publicContactEmail && !EMAIL_RE.test(publicContactEmail)) {
     return { error: "Enter a valid public contact email, or leave it blank." };
+  }
+  if (publicContactPhone && !/^[0-9+().\-\s]{7,30}$/.test(publicContactPhone)) {
+    return { error: "Enter a phone number with digits only, or leave it blank." };
   }
   if (
     !Number.isInteger(buildYear) ||
@@ -69,6 +74,7 @@ function parsePropertyForm(
       zip,
       alleyAddress: alleyAddress || null,
       publicContactEmail: publicContactEmail || null,
+      publicContactPhone: publicContactPhone || null,
       buildYear,
       neighborhoodBlurb: neighborhoodBlurb || null,
       propertyStyle,
