@@ -32,6 +32,8 @@ export default defineConfig({
           AUTH_SECRET: "e2e-only-secret",
           AUTH_URL: `http://localhost:${PORT}`,
           AUTH_TRUST_HOST: "true",
+          // The review-queue test signs in as this admin.
+          ADMIN_EMAILS: "e2e-admin@example.com",
           NEXT_PUBLIC_MAPBOX_TOKEN: "",
         },
       },

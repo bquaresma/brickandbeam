@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 import sharp from "sharp";
 
 const password = "correct-horse-battery";
@@ -404,4 +404,179 @@ test("house details and floor plans: saved, shown publicly, 'Not sure' stays pri
   const intruder = await (await browser.newContext()).newPage();
   await signUp(intruder, "intruder2");
   expect((await intruder.goto(walkthroughUrl))?.status()).toBe(404);
+});
+
+async function adminSession(browser: Browser) {
+  const email = "e2e-admin@example.com"; // matches ADMIN_EMAILS in playwright.config.ts
+  const page = await (await browser.newContext()).newPage();
+  // 201 the first time, 409 afterwards — either way the account exists.
+  await page.request.post("/api/auth/signup", {
+    data: { name: "E2E Admin", email, password },
+  });
+  await page.goto("/login");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL("**/dashboard");
+  return page;
+}
+
+test("own details and questions: built-ins, facts, custom questions, and the review queue", async ({
+  page,
+  browser,
+}) => {
+  const stamp = Date.now();
+  const bike = `Bike storage ${stamp}`;
+  const pool = `Pool ${stamp}`;
+  const wall = `Wall area ${stamp}`;
+
+  await signUp(page, "author");
+  const { propertyUrl, listingPath } = await createDraftListing(page);
+  await page.goto(propertyUrl);
+  await page.getByRole("link", { name: "House details" }).click();
+  await page.waitForURL(/\/walkthrough$/);
+  const walkthroughUrl = page.url();
+  const saved = (section: string) =>
+    page.locator(`#${section}`).getByText("Saved", { exact: true });
+
+  // Built-in questions for locks, cameras, EV charging.
+  await page.locator("#energy-evCharging").selectOption("outlet-240");
+  await page.getByRole("button", { name: "Save energy, solar and ev charging" }).click();
+  await expect(saved("energy")).toBeVisible();
+  await page.locator("#tech-lockType").selectOption("smart");
+  await page.locator("#tech-cameras").selectOption("exterior");
+  await page.getByRole("button", { name: "Save technology and security" }).click();
+  await expect(saved("tech")).toBeVisible();
+
+  // A quick fact.
+  const custom = page.locator("#custom");
+  await custom.getByRole("button", { name: "+ Add a fact" }).click();
+  await custom.getByLabel("Label", { exact: true }).fill("Internet");
+  await custom.getByLabel("Value", { exact: true }).fill("Fiber available");
+  await custom.getByRole("button", { name: "Save facts" }).click();
+  await expect(custom.getByText("Saved", { exact: true })).toBeVisible();
+
+  // A house-level yes/no question, placed in the Outdoors card.
+  await custom.locator("#q-label").fill(bike);
+  await custom.locator("#q-section").selectOption("outdoors");
+  await custom.getByRole("button", { name: "Add question" }).click();
+  await expect(custom.getByRole("listitem").filter({ hasText: bike })).toBeVisible();
+  const bikeAnswer = page.getByRole("radiogroup", { name: bike });
+  await expect(bikeAnswer).toBeVisible();
+  await bikeAnswer.getByRole("radio", { name: "Yes", exact: true }).click();
+  await page.getByRole("button", { name: "Save outdoors and parking" }).click();
+  await expect(saved("outdoors")).toBeVisible();
+
+  // A number question asked once for every room.
+  await custom.locator("#q-label").fill(wall);
+  await custom.locator("#q-type").selectOption("NUMBER");
+  await custom.locator("#q-unit").fill("sq ft");
+  await custom.locator("#q-section").selectOption("rooms");
+  await custom.getByRole("button", { name: "Add question" }).click();
+  await expect(custom.getByRole("listitem").filter({ hasText: wall })).toBeVisible();
+
+  await page.getByRole("button", { name: "+ Add a room" }).click();
+  const rooms = page.locator("#rooms");
+  await rooms.getByLabel("Room name").fill("Back bedroom");
+  await rooms.getByLabel(`${wall} (sq ft)`).fill("120");
+  await page.getByRole("button", { name: "Save rooms" }).click();
+  await expect(saved("rooms")).toBeVisible();
+
+  // Suggest the bike question for everyone, and a second one that will be rejected.
+  await custom
+    .getByRole("listitem")
+    .filter({ hasText: bike })
+    .getByRole("button", { name: "Suggest for everyone" })
+    .click();
+  await custom
+    .getByLabel(/Why would other landlords want this/)
+    .fill("Rowhouses rarely have a garage.");
+  await custom.getByRole("button", { name: "Send for review" }).click();
+  await expect(
+    custom
+      .getByRole("listitem")
+      .filter({ hasText: bike })
+      .getByText("In review", { exact: true }),
+  ).toBeVisible();
+
+  await custom.locator("#q-label").fill(pool);
+  await custom.locator("#q-section").selectOption("outdoors");
+  await custom.getByRole("button", { name: "Add question" }).click();
+  await custom
+    .getByRole("listitem")
+    .filter({ hasText: pool })
+    .getByRole("button", { name: "Suggest for everyone" })
+    .click();
+  await custom.getByRole("button", { name: "Send for review" }).click();
+  await expect(
+    custom
+      .getByRole("listitem")
+      .filter({ hasText: pool })
+      .getByText("In review", { exact: true }),
+  ).toBeVisible();
+
+  // Everything shows on the public page.
+  await openEditListing(page, propertyUrl);
+  await page.locator("#status").selectOption("PUBLISHED");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.waitForURL(/\/dashboard\/properties\/[^/]+$/);
+
+  const anonymous = await (await browser.newContext()).newPage();
+  await anonymous.goto(new URL(listingPath, page.url()).toString());
+  const details = anonymous.locator("section", { hasText: "The Details" });
+  await expect(details.getByText("240 V outlet at the parking spot")).toBeVisible();
+  await expect(details.getByText("Smart lock (app or code)")).toBeVisible();
+  await expect(details.getByText("Exterior only")).toBeVisible();
+  await expect(details.getByText("Fiber available")).toBeVisible();
+  await expect(details.getByText(`${bike}:`)).toBeVisible();
+  const layout = anonymous.locator("section", { hasText: "The House, Room by Room" });
+  await expect(layout.getByText(`${wall}:`)).toBeVisible();
+  await expect(layout.getByText("120 sq ft")).toBeVisible();
+
+  // The author is not an admin: the review page does not exist for them.
+  expect((await page.goto("/dashboard/admin/questions"))?.status()).toBe(404);
+
+  // The admin sees both suggestions with who and why, and decides.
+  const admin = await adminSession(browser);
+  await admin.goto("/dashboard");
+  await expect(admin.getByRole("link", { name: /^Review/ })).toBeVisible();
+  await admin.getByRole("link", { name: /^Review/ }).click();
+  const queue = admin
+    .getByRole("listitem")
+    .filter({ has: admin.locator(`input[value="${bike}"]`) });
+  await expect(queue).toContainText("Rowhouses rarely have a garage.");
+  await expect(queue).toContainText("Yes / No / Not sure");
+  await queue.getByRole("button", { name: "Approve for everyone" }).click();
+
+  const poolCard = admin
+    .getByRole("listitem")
+    .filter({ has: admin.locator(`input[value="${pool}"]`) });
+  await poolCard.getByRole("button", { name: "Reject…" }).click();
+  await poolCard.getByRole("button", { name: "Reject", exact: true }).click();
+  await expect(poolCard.getByRole("alert")).toContainText("Say why"); // a reason is required
+  await poolCard.getByLabel(/Reason/).fill("Already covered by Outdoors → Yard");
+  await poolCard.getByRole("button", { name: "Reject", exact: true }).click();
+  // Both decisions leave the queue. (Other items may be waiting in a shared
+  // database, so check these two rather than an empty list.)
+  await expect(queue).toHaveCount(0);
+  await expect(poolCard).toHaveCount(0);
+
+  // Approved: another landlord gets it in their walk-through at once.
+  const other = await (await browser.newContext()).newPage();
+  await signUp(other, "other");
+  const second = await createDraftListing(other);
+  await other.goto(second.propertyUrl);
+  await other.getByRole("link", { name: "House details" }).click();
+  await expect(other.getByRole("radiogroup", { name: bike })).toBeVisible();
+  await expect(other.getByRole("radiogroup", { name: pool })).toHaveCount(0);
+
+  // Rejected: still works for its author, with the reason shown.
+  await page.goto(walkthroughUrl);
+  const poolItem = page
+    .locator("#custom")
+    .getByRole("listitem")
+    .filter({ hasText: pool });
+  await expect(poolItem).toContainText("Already covered by Outdoors → Yard");
+  await expect(poolItem).toContainText("It still works for you");
+  await expect(page.getByRole("radiogroup", { name: pool })).toBeVisible();
 });

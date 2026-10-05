@@ -189,6 +189,19 @@ publicly — it stays on the landlord's page as an open item. Answers are stored
 question never needs a migration. Floor plans are `ListingPhoto` rows of kind `FLOOR_PLAN`, one per
 level (a new upload replaces the old one), shown as "Approximate — not to scale".
 
+### Your own details and questions
+
+Beyond the built-in catalog, a landlord can add **quick facts** (a label and a value, shown under
+"More about the house") and **their own questions** — Yes / No / Not sure, short text, a number, or
+choose-one — placed in any card or asked once for every room. A question works for its author
+immediately (`CustomQuestion`, status `PRIVATE`). **Suggest for everyone** moves it to `SUBMITTED`;
+an admin reviews it at `/dashboard/admin/questions` (set `ADMIN_EMAILS` in `.env`; everyone else gets
+a 404) and either approves it — it then appears in every landlord's walk-through immediately, no deploy
+needed — or rejects it with a reason (it keeps working for its author). Each question has a permanent
+`x_…` key under which answers are stored, so a reviewed question can graduate into the code catalog:
+the review page shows a ready-to-paste snippet that reuses the same key, and the duplicate in the
+database layer is then ignored automatically. Admins never see landlords' answers.
+
 ## File storage
 
 User files go through the storage adapter in `src/lib/adapters/storage` — the database stores

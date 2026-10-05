@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
 import { signOut } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin";
 
 export default async function DashboardLayout({
   children,
@@ -14,6 +15,12 @@ export default async function DashboardLayout({
   const newLeadCount = await prisma.lead.count({
     where: { status: "NEW", listing: { unit: { property: { landlordId: user.id } } } },
   });
+
+  // Admins see how many suggested questions are waiting for review.
+  const isAdmin = isAdminEmail(user.email);
+  const pendingQuestions = isAdmin
+    ? await prisma.customQuestion.count({ where: { status: "SUBMITTED" } })
+    : 0;
 
   return (
     <div className="min-h-screen bg-[#FBF0E1]">
@@ -34,6 +41,19 @@ export default async function DashboardLayout({
                 </span>
               )}
             </Link>
+            {isAdmin && (
+              <Link
+                href="/dashboard/admin/questions"
+                className="flex items-center gap-1.5 text-sm font-medium text-stone-600 hover:text-[#B1502F]"
+              >
+                Review
+                {pendingQuestions > 0 && (
+                  <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                    {pendingQuestions}
+                  </span>
+                )}
+              </Link>
+            )}
           </div>
           <div className="flex min-w-0 items-center gap-4 text-sm text-stone-600">
             {/* Hidden on phones, where it would push the page wider than the screen. */}

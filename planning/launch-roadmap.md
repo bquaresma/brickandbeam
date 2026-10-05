@@ -141,6 +141,13 @@ the camera produced; visitors get small, sharp, fast images.
 
 ### 1.2 Rooms, floor plans, and what makes an old house different (L)
 
+**Update (Oct 5): own details, own questions, and a review path — built and tested.** Landlords can add quick facts and
+questions of their own (placed in any card, or asked once per room); a question works for its author at once, can be
+suggested for everyone, and is approved or rejected at `/dashboard/admin/questions` (admins set by `ADMIN_EMAILS`). The
+catalog also gained three cards you asked for: **Energy, solar and EV charging**, **Technology and security** (smart
+locks, video doorbells, cameras, alarms, internet, smoke/CO detectors) and **Upkeep and responsibilities** (snow, yard,
+pest history, roof, updates), plus per-room heat, ceiling-fan and ethernet-jack questions.
+
 **Status (Oct 4): built and tested** — the field catalog and generated validation, the walk-through page with its completeness
 meter, the rooms editor, per-level floor plans (a new upload replaces the old), the public room-by-room section and detail
 cards (with "Not sure" never shown), and the optional property style. Checked in a browser on desktop and a phone-sized
@@ -590,4 +597,5 @@ One short email to 2–3 attorneys. Ask for a flat fee per item, or one bundled 
 4. **Website:** privacy policy and terms of use for a site that collects applicant and tenant information.
 5. **Electronic signing:** whether in-app e-signature with an audit trail is acceptable for a residential lease, and how long to retain signed documents and applicant records.
 6. **Questions:** does Pittsburgh require a rental permit or lead inspection for this house (and get that in writing); what is the status of the City's lead ordinance; and is an LLC worth considering for later houses.
-7. **Known conditions:** which conditions the listing should state and how (lead water line, asbestos, past water intrusion or mold, radon results, knob-and-tube wiring), and whether the floor-plan "approximate" label is enough.
+7. **Cameras and recording:** how the listing should describe security cameras, video doorbells and anything that can record a tenant's own space or shared areas, and whether landlord-added free-text questions need a review step before they are published.
+8. **Known conditions:** which conditions the listing should state and how (lead water line, asbestos, past water intrusion or mold, radon results, knob-and-tube wiring), and whether the floor-plan "approximate" label is enough.
