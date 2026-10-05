@@ -13,7 +13,13 @@ import { HouseDetails } from "@/components/house-details";
 import { ListingGallery } from "@/components/listing-gallery";
 import { ROOM_FIELDS } from "@/lib/details/catalog";
 import { roomQuestionFields } from "@/lib/details/custom";
-import { publicSections, roomExtraFields } from "@/lib/details/format";
+import {
+  derivedSpaces,
+  groupSections,
+  highlights,
+  publicSections,
+  roomExtraFields,
+} from "@/lib/details/format";
 import { toRecord, visibleQuestions } from "@/lib/questions";
 import type { Details, Room } from "@/lib/details/schema";
 import { toPhotoView } from "@/lib/images/view";
@@ -224,6 +230,8 @@ export default async function PublicListingPage({
   // The landlord's own and approved custom questions, so their answers show.
   const questionRecords = (await visibleQuestions(property.landlordId)).map(toRecord);
   const detailSections = publicSections(unit.details as Details | null, questionRecords);
+  const glance = highlights(unit.details as Details | null, questionRecords);
+  const spaces = derivedSpaces(unit.details as Details | null, rooms, questionRecords);
   const extraRoomFields = roomExtraFields([
     ...ROOM_FIELDS,
     ...roomQuestionFields(questionRecords),
@@ -480,11 +488,16 @@ export default async function PublicListingPage({
           </section>
         )}
 
-        {(plans.length > 0 || rooms.length > 0) && (
+        {(plans.length > 0 || rooms.length > 0 || spaces.length > 0) && (
           <section className="mt-12">
             <Eyebrow>The House, Room by Room</Eyebrow>
             <div className="mt-4">
-              <FloorPlans plans={plans} rooms={rooms} extraFields={extraRoomFields} />
+              <FloorPlans
+                plans={plans}
+                rooms={rooms}
+                spaces={spaces}
+                extraFields={extraRoomFields}
+              />
             </div>
           </section>
         )}
@@ -493,7 +506,11 @@ export default async function PublicListingPage({
           <section className="mt-12">
             <Eyebrow>The Details</Eyebrow>
             <div className="mt-4">
-              <HouseDetails sections={detailSections} />
+              <HouseDetails
+                groups={groupSections(detailSections)}
+                highlights={glance.highlights}
+                quirks={glance.quirks}
+              />
             </div>
           </section>
         )}

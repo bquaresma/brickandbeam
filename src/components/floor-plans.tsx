@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ResponsivePicture } from "@/components/responsive-picture";
 import { LEVELS, ROOM_TAGS, ROOM_TYPES, type Field } from "@/lib/details/catalog";
-import { roomExtraLines, roomSize } from "@/lib/details/format";
+import { roomExtraLines, roomSize, type DerivedSpace } from "@/lib/details/format";
 import type { Room } from "@/lib/details/schema";
 import type { PhotoView } from "@/lib/images/view";
 
@@ -21,10 +21,13 @@ const tagLabel = (value: string) =>
 export function FloorPlans({
   plans,
   rooms,
+  spaces,
   extraFields,
 }: {
   plans: PhotoView[];
   rooms: Room[];
+  // Bathrooms and the basement, derived from their own cards.
+  spaces: DerivedSpace[];
   // Room questions beyond the core description (heat, fan, jack, and any the
   // landlord added); only answered ones are shown.
   extraFields: Field[];
@@ -33,6 +36,7 @@ export function FloorPlans({
   const present = new Set([
     ...plans.map((p) => levelOf(p.level)),
     ...rooms.map((r) => levelOf(r.level)),
+    ...spaces.map((s) => levelOf(s.level)),
   ]);
   const ordered = [
     ...LEVELS.filter((l) => present.has(l)),
@@ -40,7 +44,11 @@ export function FloorPlans({
     ...(present.has("") ? [""] : []),
   ];
 
-  const [active, setActive] = useState(ordered[0] ?? "");
+  // Open on a floor that has a plan; otherwise the main floor; otherwise the first.
+  const [active, setActive] = useState(
+    ordered.find((l) => plans.some((p) => levelOf(p.level) === l)) ??
+      (ordered.includes("First floor") ? "First floor" : (ordered[0] ?? "")),
+  );
   const [enlarged, setEnlarged] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -53,6 +61,7 @@ export function FloorPlans({
 
   const plan = plans.find((p) => levelOf(p.level) === active);
   const roomsHere = rooms.filter((r) => levelOf(r.level) === active);
+  const spacesHere = spaces.filter((s) => levelOf(s.level) === active);
   const nameFor = (level: string) => level || "Other spaces";
 
   return (
@@ -106,7 +115,7 @@ export function FloorPlans({
           </figure>
         )}
 
-        {roomsHere.length > 0 && (
+        {(roomsHere.length > 0 || spacesHere.length > 0) && (
           <ul className={`space-y-3 ${plan ? "" : "md:col-span-2"}`}>
             {roomsHere.map((room) => (
               <li
@@ -178,6 +187,28 @@ export function FloorPlans({
                     {room.notes}
                   </p>
                 )}
+              </li>
+            ))}
+            {spacesHere.map((space) => (
+              <li
+                key={space.id}
+                className="rounded-lg border bg-white p-4"
+                style={{ borderColor: `${TIMBER}26` }}
+              >
+                <p
+                  className="text-base font-medium"
+                  style={{ fontFamily: "var(--font-spectral)", color: CHARCOAL }}
+                >
+                  {space.name}
+                </p>
+                <dl className="mt-1 space-y-0.5 text-sm" style={{ color: "#3d342c" }}>
+                  {space.lines.map((line) => (
+                    <div key={line.label} className="flex flex-wrap gap-x-2">
+                      <dt style={{ color: `${TIMBER}cc` }}>{line.label}:</dt>
+                      <dd className="font-medium">{line.text}</dd>
+                    </div>
+                  ))}
+                </dl>
               </li>
             ))}
           </ul>

@@ -14,6 +14,21 @@ async function signUp(page: Page, label: string) {
   return email;
 }
 
+// The walk-through shows one step at a time; go to a step by its sidebar name.
+async function openStep(page: Page, title: string) {
+  const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await page
+    .getByRole("navigation", { name: "Sections" })
+    .getByRole("button", { name: new RegExp(`^${escaped}`) })
+    .click();
+}
+
+// The public details are folded into groups; open every folded one.
+async function expandDetails(page: Page) {
+  const closed = page.locator("details:not([open]) > summary");
+  while ((await closed.count()) > 0) await closed.first().click();
+}
+
 async function createDraftListing(page: Page) {
   await page.goto("/dashboard/properties/new");
   await expect(page.locator('input[name="isWholeHouse"]')).toBeChecked();
@@ -281,6 +296,7 @@ test("house details and floor plans: saved, shown publicly, 'Not sure' stays pri
     page.locator(`#${section}`).getByText("Saved", { exact: true });
 
   // Kitchen: an answer, a "No", a "Not sure", and a note.
+  await openStep(page, "Kitchen");
   await page.locator("#kitchen-range").selectOption("gas");
   await page.locator("#kitchen-dishwasher").selectOption("no");
   await page
@@ -288,36 +304,36 @@ test("house details and floor plans: saved, shown publicly, 'Not sure' stays pri
     .getByRole("radio", { name: "Not sure" })
     .click();
   await page.locator("#kitchen-notes").fill("The floor slopes toward the window.");
-  await page.getByRole("button", { name: "Save kitchen" }).click();
   await expect(saved("kitchen")).toBeVisible();
 
   // A bathroom with a claw-foot tub and no outlet.
+  await openStep(page, "Bathrooms");
   await page.getByRole("button", { name: "+ Add a bathroom" }).click();
   const baths = page.locator("#bathrooms");
   await baths.getByLabel("Name this one (optional)").fill("Upstairs bath");
   await baths.getByLabel("Tub", { exact: true }).selectOption("clawfoot");
   await baths.getByLabel("Outlets", { exact: true }).selectOption("none");
-  await page.getByRole("button", { name: "Save bathrooms" }).click();
   await expect(saved("bathrooms")).toBeVisible();
 
   // Basement.
+  await openStep(page, "Basement");
   await page.locator("#basement-type").selectOption("full");
   await page.locator("#basement-moisture").selectOption("damp");
   await page
     .getByRole("radiogroup", { name: "Sump pump" })
     .getByRole("radio", { name: "Yes" })
     .click();
-  await page.getByRole("button", { name: "Save basement" }).click();
   await expect(saved("basement")).toBeVisible();
 
   // Character: a catalog chip and one of our own.
+  await openStep(page, "Character and quirks");
   await page.getByRole("button", { name: "Original hardwood or pine floors" }).click();
   await page.getByLabel("Add your own: Features").fill("a dumbwaiter");
   await page.getByLabel("Add your own: Features").press("Enter");
-  await page.getByRole("button", { name: "Save character and quirks" }).click();
   await expect(saved("character")).toBeVisible();
 
   // A room, described honestly.
+  await openStep(page, "Rooms & floor plans");
   await page.getByRole("button", { name: "+ Add a room" }).click();
   const rooms = page.locator("#rooms");
   await rooms.getByLabel("Room name").fill("Attic suite");
@@ -356,11 +372,14 @@ test("house details and floor plans: saved, shown publicly, 'Not sure' stays pri
 
   // Everything persisted: reload and look. The "Not sure" answer is an open item.
   await page.reload();
+  await openStep(page, "Kitchen");
   await expect(page.locator("#kitchen-range")).toHaveValue("gas");
   await expect(page.locator("#kitchen").getByText("Open item")).toBeVisible();
+  await openStep(page, "Bathrooms");
   await expect(
     page.locator("#bathrooms").getByLabel("Name this one (optional)"),
   ).toHaveValue("Upstairs bath");
+  await openStep(page, "Rooms & floor plans");
   await expect(page.locator("#rooms").getByLabel("Room name")).toHaveValue("Attic suite");
 
   // Publish, then read the public page as a stranger.
@@ -371,13 +390,14 @@ test("house details and floor plans: saved, shown publicly, 'Not sure' stays pri
 
   const anonymous = await (await browser.newContext()).newPage();
   await anonymous.goto(new URL(listingPath, page.url()).toString());
+  await expandDetails(anonymous);
   const html = await anonymous.content();
 
   const details = anonymous.locator("section", { hasText: "The Details" });
   await expect(details.getByText("Gas", { exact: true })).toBeVisible();
   await expect(details.getByText("No", { exact: true }).first()).toBeVisible(); // dishwasher
   await expect(details.getByText("Upstairs bath")).toBeVisible();
-  await expect(details.getByText("Claw-foot")).toBeVisible();
+  await expect(details.getByText("Claw-foot", { exact: true })).toBeVisible();
   await expect(details.getByText("Occasionally damp")).toBeVisible();
   await expect(
     details.getByText("Original hardwood or pine floors, a dumbwaiter"),
@@ -399,6 +419,16 @@ test("house details and floor plans: saved, shown publicly, 'Not sure' stays pri
   await expect(
     layout.getByText("Non-conforming bedroom · Not counted as a bedroom"),
   ).toBeVisible();
+
+  // The basement and bathroom come from their own cards, with no extra entry:
+  // the basement gets its own floor tab, and a bathroom with no floor set
+  // appears under "Other spaces".
+  await layout.getByRole("tab", { name: "Basement" }).click();
+  await expect(layout.getByText("Occasionally damp")).toBeVisible();
+  await expect(layout.getByText("Full", { exact: true })).toBeVisible();
+  await layout.getByRole("tab", { name: "Other spaces" }).click();
+  await expect(layout.getByText("Upstairs bath")).toBeVisible();
+  await expect(layout.getByText("Claw-foot")).toBeVisible();
 
   // Another landlord cannot even open this walk-through.
   const intruder = await (await browser.newContext()).newPage();
@@ -440,15 +470,16 @@ test("own details and questions: built-ins, facts, custom questions, and the rev
     page.locator(`#${section}`).getByText("Saved", { exact: true });
 
   // Built-in questions for locks, cameras, EV charging.
+  await openStep(page, "Energy, solar and EV charging");
   await page.locator("#energy-evCharging").selectOption("outlet-240");
-  await page.getByRole("button", { name: "Save energy, solar and ev charging" }).click();
   await expect(saved("energy")).toBeVisible();
+  await openStep(page, "Technology and security");
   await page.locator("#tech-lockType").selectOption("smart");
   await page.locator("#tech-cameras").selectOption("exterior");
-  await page.getByRole("button", { name: "Save technology and security" }).click();
   await expect(saved("tech")).toBeVisible();
 
   // A quick fact.
+  await openStep(page, "Your own questions");
   const custom = page.locator("#custom");
   await custom.getByRole("button", { name: "+ Add a fact" }).click();
   await custom.getByLabel("Label", { exact: true }).fill("Internet");
@@ -461,13 +492,14 @@ test("own details and questions: built-ins, facts, custom questions, and the rev
   await custom.locator("#q-section").selectOption("outdoors");
   await custom.getByRole("button", { name: "Add question" }).click();
   await expect(custom.getByRole("listitem").filter({ hasText: bike })).toBeVisible();
+  await openStep(page, "Outdoors and parking");
   const bikeAnswer = page.getByRole("radiogroup", { name: bike });
   await expect(bikeAnswer).toBeVisible();
   await bikeAnswer.getByRole("radio", { name: "Yes", exact: true }).click();
-  await page.getByRole("button", { name: "Save outdoors and parking" }).click();
   await expect(saved("outdoors")).toBeVisible();
 
   // A number question asked once for every room.
+  await openStep(page, "Your own questions");
   await custom.locator("#q-label").fill(wall);
   await custom.locator("#q-type").selectOption("NUMBER");
   await custom.locator("#q-unit").fill("sq ft");
@@ -475,6 +507,7 @@ test("own details and questions: built-ins, facts, custom questions, and the rev
   await custom.getByRole("button", { name: "Add question" }).click();
   await expect(custom.getByRole("listitem").filter({ hasText: wall })).toBeVisible();
 
+  await openStep(page, "Rooms & floor plans");
   await page.getByRole("button", { name: "+ Add a room" }).click();
   const rooms = page.locator("#rooms");
   await rooms.getByLabel("Room name").fill("Back bedroom");
@@ -483,6 +516,7 @@ test("own details and questions: built-ins, facts, custom questions, and the rev
   await expect(saved("rooms")).toBeVisible();
 
   // Suggest the bike question for everyone, and a second one that will be rejected.
+  await openStep(page, "Your own questions");
   await custom
     .getByRole("listitem")
     .filter({ hasText: bike })
@@ -523,6 +557,7 @@ test("own details and questions: built-ins, facts, custom questions, and the rev
 
   const anonymous = await (await browser.newContext()).newPage();
   await anonymous.goto(new URL(listingPath, page.url()).toString());
+  await expandDetails(anonymous);
   const details = anonymous.locator("section", { hasText: "The Details" });
   await expect(details.getByText("240 V outlet at the parking spot")).toBeVisible();
   await expect(details.getByText("Smart lock (app or code)")).toBeVisible();
@@ -567,16 +602,167 @@ test("own details and questions: built-ins, facts, custom questions, and the rev
   const second = await createDraftListing(other);
   await other.goto(second.propertyUrl);
   await other.getByRole("link", { name: "House details" }).click();
+  await openStep(other, "Outdoors and parking");
   await expect(other.getByRole("radiogroup", { name: bike })).toBeVisible();
   await expect(other.getByRole("radiogroup", { name: pool })).toHaveCount(0);
 
   // Rejected: still works for its author, with the reason shown.
   await page.goto(walkthroughUrl);
+  await openStep(page, "Your own questions");
   const poolItem = page
     .locator("#custom")
     .getByRole("listitem")
     .filter({ hasText: pool });
   await expect(poolItem).toContainText("Already covered by Outdoors → Yard");
   await expect(poolItem).toContainText("It still works for you");
+  await openStep(page, "Outdoors and parking");
   await expect(page.getByRole("radiogroup", { name: pool })).toBeVisible();
+});
+
+async function openWalkthrough(page: Page) {
+  const { propertyUrl, listingPath } = await createDraftListing(page);
+  await page.goto(propertyUrl);
+  await page.getByRole("link", { name: "House details" }).click();
+  await page.waitForURL(/\/walkthrough$/);
+  return { propertyUrl, listingPath };
+}
+
+test("walk-through: one step at a time, autosave, follow-ups, and a review step", async ({
+  page,
+}) => {
+  await signUp(page, "steps");
+  await openWalkthrough(page);
+  const nav = page.getByRole("navigation", { name: "Sections" });
+  const saved = (section: string) =>
+    page.locator(`#${section}`).getByText("Saved", { exact: true });
+
+  // It opens on the first step; every other step is out of sight.
+  await expect(page.locator("#rooms")).toBeVisible();
+  await expect(page.locator("#kitchen")).toBeHidden();
+  await expect(nav.getByRole("button", { name: /^Review/ })).toBeVisible();
+
+  await openStep(page, "Basement");
+  await expect(page.locator("#basement")).toBeVisible();
+  await expect(page.locator("#rooms")).toBeHidden();
+
+  // Follow-up questions appear only once they apply.
+  await expect(page.locator("#basement-finish")).toHaveCount(0);
+  await page.locator("#basement-type").selectOption("full");
+  await expect(page.locator("#basement-finish")).toBeVisible();
+  await expect(page.locator("#basement-moistureYear")).toHaveCount(0);
+  await page.locator("#basement-moisture").selectOption("water-history");
+  await expect(page.locator("#basement-moistureYear")).toBeVisible();
+  await page.locator("#basement-moistureYear").fill("2019");
+
+  // No Save button: it saves on its own.
+  await expect(page.getByRole("button", { name: /^Save basement/ })).toHaveCount(0);
+  await expect(saved("basement")).toBeVisible();
+
+  // Answers survive moving between steps.
+  await openStep(page, "Kitchen");
+  await page.locator("#kitchen-range").selectOption("gas");
+  await openStep(page, "Basement");
+  await openStep(page, "Kitchen");
+  await expect(page.locator("#kitchen-range")).toHaveValue("gas");
+
+  // A "Not sure" shows up in the sidebar as an open item.
+  await page
+    .getByRole("radiogroup", { name: "Pantry or butler's pantry" })
+    .getByRole("radio", { name: "Not sure" })
+    .click();
+  await expect(nav.getByRole("button", { name: /^Kitchen/ })).toContainText("1 open");
+  await expect(saved("kitchen")).toBeVisible();
+
+  // Next and Back walk the house in order.
+  await page.getByRole("button", { name: /^Next: Bathrooms/ }).click();
+  await expect(page.locator("#bathrooms")).toBeVisible();
+  await page.getByRole("button", { name: "← Back" }).click();
+  await expect(page.locator("#kitchen")).toBeVisible();
+
+  // The review step lists what still needs a look, with a way back.
+  await openStep(page, "Review");
+  await expect(page.locator("#review")).toContainText("1 marked “Not sure”");
+  await page.locator("#review").getByRole("button", { name: "Kitchen" }).click();
+  await expect(page.locator("#kitchen")).toBeVisible();
+
+  // Everything persisted, and a link can open a specific step.
+  await page.goto(`${page.url().split("#")[0]}#basement`);
+  await page.reload();
+  await expect(page.locator("#basement")).toBeVisible();
+  await expect(page.locator("#basement-moisture")).toHaveValue("water-history");
+  await expect(page.locator("#basement-moistureYear")).toHaveValue("2019");
+});
+
+test("walk-through on a phone is a guided flow", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await signUp(page, "phone");
+  await openWalkthrough(page);
+
+  await expect(page.getByText(/^Step 1 of \d+ — Rooms & floor plans/)).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Sections" })).toBeHidden();
+
+  await page.getByRole("button", { name: /^Next:/ }).click();
+  await expect(page.getByText(/^Step 2 of \d+ — Outdoors and parking/)).toBeVisible();
+  await expect(page.locator("#outdoors")).toBeVisible();
+
+  await page.getByLabel("Jump to").selectOption("kitchen");
+  await expect(page.getByText(/— Kitchen$/)).toBeVisible();
+  await expect(page.locator("#kitchen")).toBeVisible();
+
+  // Nothing pushes the page wider than the screen.
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(overflow).toBe(false);
+});
+
+test("public details: at-a-glance chips and foldable groups", async ({
+  page,
+  browser,
+}) => {
+  await signUp(page, "groups");
+  const { propertyUrl, listingPath } = await openWalkthrough(page);
+  const saved = (section: string) =>
+    page.locator(`#${section}`).getByText("Saved", { exact: true });
+
+  await openStep(page, "Kitchen");
+  await page.locator("#kitchen-range").selectOption("gas");
+  await expect(saved("kitchen")).toBeVisible();
+  await openStep(page, "Systems");
+  await page.locator("#systems-heat").selectOption("steam");
+  await expect(saved("systems")).toBeVisible();
+  await openStep(page, "Character and quirks");
+  await page.getByRole("button", { name: "Steep or narrow stairs" }).click();
+  await expect(saved("character")).toBeVisible();
+  await openStep(page, "Good to know");
+  await page.getByRole("button", { name: "Past water intrusion" }).click();
+  await expect(saved("knownConditions")).toBeVisible();
+
+  await openEditListing(page, propertyUrl);
+  await page.locator("#status").selectOption("PUBLISHED");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.waitForURL(/\/dashboard\/properties\/[^/]+$/);
+
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto(new URL(listingPath, page.url()).toString());
+  const section = visitor.locator("section", { hasText: "The Details" });
+
+  // The facts a renter scans for are chips, with nothing to open.
+  await expect(section.getByText("Gas range", { exact: true })).toBeVisible();
+  await expect(section.getByText("Steam heat", { exact: true })).toBeVisible();
+  await expect(section.getByText("Steep or narrow stairs").first()).toBeVisible();
+
+  // Groups: the first and "Good to know" start open; the rest fold away.
+  const inside = section.locator("details", { hasText: "Inside the house" });
+  const systems = section.locator("details", { hasText: "Systems, energy and tech" });
+  const good = section.locator("details", { hasText: "Good to know" });
+  expect(await inside.getAttribute("open")).not.toBeNull();
+  expect(await good.getAttribute("open")).not.toBeNull();
+  expect(await systems.getAttribute("open")).toBeNull();
+  await expect(good.getByText("Past water intrusion")).toBeVisible();
+  await expect(systems.getByText("Steam radiators")).toBeHidden();
+
+  // One tap opens a folded group.
+  await systems.locator("summary").click();
+  await expect(systems.getByText("Steam radiators")).toBeVisible();
 });
