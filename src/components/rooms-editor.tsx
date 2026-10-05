@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { FieldInput } from "@/components/field-input";
 import { saveRooms } from "@/lib/actions/details";
-import { ROOM_FIELDS } from "@/lib/details/catalog";
+import type { Field } from "@/lib/details/catalog";
 import type { Room } from "@/lib/details/schema";
 
 type Status =
@@ -20,10 +20,13 @@ export function RoomsEditor({
   propertyId,
   unitId,
   initialRooms,
+  fields,
 }: {
   propertyId: string;
   unitId: string;
   initialRooms: Room[];
+  // The built-in room questions plus any "for each room" questions.
+  fields: Field[];
 }) {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -53,8 +56,9 @@ export function RoomsEditor({
               className="rounded-md border border-stone-200 bg-stone-50 p-4"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {ROOM_FIELDS.filter((f) => f.key !== "countsAsBedroom" || isBedroom).map(
-                  (field) => (
+                {fields
+                  .filter((f) => f.key !== "countsAsBedroom" || isBedroom)
+                  .map((field) => (
                     <div
                       key={field.key}
                       className={
@@ -71,8 +75,7 @@ export function RoomsEditor({
                         onChange={(next) => update(index, field.key, next)}
                       />
                     </div>
-                  ),
-                )}
+                  ))}
               </div>
               <button
                 type="button"

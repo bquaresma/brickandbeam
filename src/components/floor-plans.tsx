@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ResponsivePicture } from "@/components/responsive-picture";
-import { LEVELS, ROOM_TAGS, ROOM_TYPES } from "@/lib/details/catalog";
-import { roomSize } from "@/lib/details/format";
+import { LEVELS, ROOM_TAGS, ROOM_TYPES, type Field } from "@/lib/details/catalog";
+import { roomExtraLines, roomSize } from "@/lib/details/format";
 import type { Room } from "@/lib/details/schema";
 import type { PhotoView } from "@/lib/images/view";
 
@@ -18,7 +18,17 @@ const tagLabel = (value: string) =>
 
 // "The house, room by room": a tab per floor, the plan image (zoomable), and a
 // written legend of the rooms so the information doesn't depend on the image.
-export function FloorPlans({ plans, rooms }: { plans: PhotoView[]; rooms: Room[] }) {
+export function FloorPlans({
+  plans,
+  rooms,
+  extraFields,
+}: {
+  plans: PhotoView[];
+  rooms: Room[];
+  // Room questions beyond the core description (heat, fan, jack, and any the
+  // landlord added); only answered ones are shown.
+  extraFields: Field[];
+}) {
   const levelOf = (value: string | null | undefined) => value || "";
   const present = new Set([
     ...plans.map((p) => levelOf(p.level)),
@@ -149,6 +159,16 @@ export function FloorPlans({ plans, rooms }: { plans: PhotoView[]; rooms: Room[]
                   <p className="mt-1 text-sm" style={{ color: "#3d342c" }}>
                     {room.tags.map(tagLabel).join(" · ")}
                   </p>
+                )}
+                {roomExtraLines(room, extraFields).length > 0 && (
+                  <dl className="mt-1 space-y-0.5 text-sm" style={{ color: "#3d342c" }}>
+                    {roomExtraLines(room, extraFields).map((line) => (
+                      <div key={line.label} className="flex flex-wrap gap-x-2">
+                        <dt style={{ color: `${TIMBER}cc` }}>{line.label}:</dt>
+                        <dd className="font-medium">{line.text}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 )}
                 {room.notes && (
                   <p

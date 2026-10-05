@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
 import { SECTION_KEYS, type SectionKey } from "@/lib/details/catalog";
-import { parseRooms, parseSection } from "@/lib/details/schema";
+import { parseFacts, parseRooms, parseSection } from "@/lib/details/schema";
+import { toRecord, visibleQuestions } from "@/lib/questions";
 import type { ActionResult } from "@/lib/actions/action-result";
 
 // Ownership: unit -> property -> landlord.
@@ -36,7 +37,8 @@ export async function saveDetailsSection(
   if (!(SECTION_KEYS as readonly string[]).includes(section))
     return { error: "Unknown section." };
 
-  const parsed = parseSection(section as SectionKey, input);
+  const questions = (await visibleQuestions(user.id)).map(toRecord);
+  const parsed = parseSection(section as SectionKey, input, questions);
   if (!parsed.ok) return { error: parsed.error };
 
   await prisma.$executeRaw`
@@ -62,9 +64,36 @@ export async function saveRooms(
   if (!(await findOwnedUnit(propertyId, unitId, user.id)))
     return { error: "Unit not found." };
 
-  const parsed = parseRooms(input);
+  const questions = (await visibleQuestions(user.id)).map(toRecord);
+  const parsed = parseRooms(input, questions);
   if (!parsed.ok) return { error: parsed.error };
 
   await prisma.unit.update({ where: { id: unitId }, data: { rooms: parsed.value } });
+  refresh(propertyId, unitId);
+}
+
+export async function saveFacts(
+  propertyId: string,
+  unitId: string,
+  input: unknown,
+): Promise<ActionResult> {
+  const user = await requireLandlord();
+  if (!(await findOwnedUnit(propertyId, unitId, user.id)))
+    return { error: "Unit not found." };
+
+  const parsed = parseFacts(input);
+  if (!parsed.ok) return { error: parsed.error };
+
+  await prisma.$executeRaw`
+    UPDATE units
+    SET details = jsonb_set(
+          jsonb_set(COALESCE(details, '{}'::jsonb), '{version}', '1'::jsonb),
+          '{facts}',
+          ${JSON.stringify(parsed.value)}::jsonb,
+          true
+        ),
+        "updatedAt" = now()
+    WHERE id = ${unitId}`;
+
   refresh(propertyId, unitId);
 }

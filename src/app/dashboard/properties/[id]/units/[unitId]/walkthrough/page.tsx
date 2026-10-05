@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CustomDetailsCard } from "@/components/custom-details-card";
 import { DetailsCard } from "@/components/details-card";
 import { FloorPlanManager } from "@/components/floor-plan-manager";
 import { RoomsEditor } from "@/components/rooms-editor";
 import { prisma } from "@/lib/prisma";
 import { requireLandlord } from "@/lib/current-user";
-import { SECTIONS } from "@/lib/details/catalog";
+import { ROOM_FIELDS, SECTIONS } from "@/lib/details/catalog";
+import { roomQuestionFields, withCustomFields } from "@/lib/details/custom";
+import { toRecord, visibleQuestions, type QuestionView } from "@/lib/questions";
 import { progress } from "@/lib/details/format";
 import type { Details, Room } from "@/lib/details/schema";
 import { toPhotoView } from "@/lib/images/view";
@@ -35,14 +38,32 @@ export default async function WalkthroughPage({
   const details = (unit.details as Details | null) ?? { version: 1 };
   const rooms = (unit.rooms as Room[] | null) ?? [];
 
-  const totals = SECTIONS.map((s) => progress(s, details[s.key])).reduce(
-    (sum, p) => ({
-      answered: sum.answered + p.answered,
-      total: sum.total + p.total,
-      open: sum.open + p.open,
-    }),
-    { answered: 0, total: 0, open: 0 },
+  // The landlord's own questions plus approved ones extend the built-in cards.
+  const questionRows = await visibleQuestions(user.id);
+  const records = questionRows.map(toRecord);
+  const sections = SECTIONS.map((s) => withCustomFields(s, records)).filter(
+    (s) => s.fields.length > 0,
   );
+  const roomFields = [...ROOM_FIELDS, ...roomQuestionFields(records)];
+  const questionViews: QuestionView[] = questionRows.map((q) => ({
+    ...toRecord(q),
+    id: q.id,
+    mine: q.authorId === user.id,
+    status: q.status,
+    submitNote: q.submitNote,
+    reviewNote: q.reviewNote,
+  }));
+
+  const totals = sections
+    .map((s) => progress(s, details[s.key]))
+    .reduce(
+      (sum, p) => ({
+        answered: sum.answered + p.answered,
+        total: sum.total + p.total,
+        open: sum.open + p.open,
+      }),
+      { answered: 0, total: 0, open: 0 },
+    );
   const percent = totals.total ? Math.round((totals.answered / totals.total) * 100) : 0;
 
   return (
@@ -83,7 +104,7 @@ export default async function WalkthroughPage({
           >
             Rooms &amp; floor plans
           </a>
-          {SECTIONS.map((s) => (
+          {sections.map((s) => (
             <a
               key={s.key}
               href={`#${s.key}`}
@@ -92,6 +113,12 @@ export default async function WalkthroughPage({
               {s.title}
             </a>
           ))}
+          <a
+            href="#custom"
+            className="rounded-full border border-stone-300 px-3 py-1 text-stone-700 hover:bg-stone-50"
+          >
+            Your own questions
+          </a>
         </nav>
       </div>
 
@@ -116,11 +143,16 @@ export default async function WalkthroughPage({
           />
           <h3 className="mt-6 text-sm font-semibold text-stone-700">Rooms</h3>
           <div className="mt-3">
-            <RoomsEditor propertyId={id} unitId={unitId} initialRooms={rooms} />
+            <RoomsEditor
+              propertyId={id}
+              unitId={unitId}
+              initialRooms={rooms}
+              fields={roomFields}
+            />
           </div>
         </section>
 
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <DetailsCard
             key={section.key}
             propertyId={id}
@@ -129,6 +161,13 @@ export default async function WalkthroughPage({
             initial={details[section.key]}
           />
         ))}
+
+        <CustomDetailsCard
+          propertyId={id}
+          unitId={unitId}
+          initialFacts={details.facts ?? []}
+          questions={questionViews}
+        />
       </div>
     </div>
   );

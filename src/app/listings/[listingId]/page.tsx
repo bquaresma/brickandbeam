@@ -11,7 +11,10 @@ import { FormWithError, SubmitButton } from "@/components/action-form";
 import { FloorPlans } from "@/components/floor-plans";
 import { HouseDetails } from "@/components/house-details";
 import { ListingGallery } from "@/components/listing-gallery";
-import { publicSections } from "@/lib/details/format";
+import { ROOM_FIELDS } from "@/lib/details/catalog";
+import { roomQuestionFields } from "@/lib/details/custom";
+import { publicSections, roomExtraFields } from "@/lib/details/format";
+import { toRecord, visibleQuestions } from "@/lib/questions";
 import type { Details, Room } from "@/lib/details/schema";
 import { toPhotoView } from "@/lib/images/view";
 import {
@@ -218,7 +221,13 @@ export default async function PublicListingPage({
 
   const plans = listing.photos.filter((p) => p.kind === "FLOOR_PLAN").map(toPhotoView);
   const rooms = (unit.rooms as Room[] | null) ?? [];
-  const detailSections = publicSections(unit.details as Details | null);
+  // The landlord's own and approved custom questions, so their answers show.
+  const questionRecords = (await visibleQuestions(property.landlordId)).map(toRecord);
+  const detailSections = publicSections(unit.details as Details | null, questionRecords);
+  const extraRoomFields = roomExtraFields([
+    ...ROOM_FIELDS,
+    ...roomQuestionFields(questionRecords),
+  ]);
 
   const storyParagraphs = listing.story.split("\n").filter((p) => p.trim());
 
@@ -475,7 +484,7 @@ export default async function PublicListingPage({
           <section className="mt-12">
             <Eyebrow>The House, Room by Room</Eyebrow>
             <div className="mt-4">
-              <FloorPlans plans={plans} rooms={rooms} />
+              <FloorPlans plans={plans} rooms={rooms} extraFields={extraRoomFields} />
             </div>
           </section>
         )}
