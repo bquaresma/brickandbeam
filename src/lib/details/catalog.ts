@@ -14,6 +14,9 @@ type Base = {
   help?: string;
   // Sub-heading inside a section, shown above the first field of the group.
   group?: string;
+  // A follow-up question: only asked (and shown, and counted) when the answer
+  // to another question in the same entry is one of these values.
+  showIf?: { key: string; in: string[] };
 };
 export type Field =
   | (Base & { type: "select"; options: Option[] })
@@ -170,6 +173,7 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
+        showIf: { key: "range", in: ["none"] },
         key: "rangeHookups",
         label: "Hookups for your own range",
         type: "tags",
@@ -394,6 +398,7 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
+        showIf: { key: "moisture", in: ["water-history"] },
         key: "moistureYear",
         label: "Year water last came in",
         type: "number",
@@ -451,6 +456,7 @@ export const SECTIONS: Section[] = [
       },
       { key: "radonTested", label: "Tested for radon", type: "tri", group: "Optional" },
       {
+        showIf: { key: "radonTested", in: ["yes"] },
         key: "radonResult",
         label: "Radon result and date",
         type: "text",
@@ -534,7 +540,12 @@ export const SECTIONS: Section[] = [
         ],
       },
       { key: "zones", label: "Thermostat zones", type: "text", max: 80 },
-      { key: "radiatorCovers", label: "Radiator covers", type: "tri" },
+      {
+        showIf: { key: "heat", in: ["steam", "hot-water"] },
+        key: "radiatorCovers",
+        label: "Radiator covers",
+        type: "tri",
+      },
       {
         key: "cooling",
         label: "Cooling",
@@ -546,7 +557,12 @@ export const SECTIONS: Section[] = [
           ["none", "None"],
         ),
       },
-      { key: "windowsSuitAC", label: "Windows suit an air conditioner", type: "tri" },
+      {
+        showIf: { key: "cooling", in: ["window-units", "none"] },
+        key: "windowsSuitAC",
+        label: "Windows suit an air conditioner",
+        type: "tri",
+      },
       {
         key: "electricService",
         label: "Electrical service",
@@ -625,6 +641,7 @@ export const SECTIONS: Section[] = [
         ],
       },
       {
+        showIf: { key: "heaterType", in: ["tank-gas", "tank-electric", "tankless"] },
         key: "heaterSize",
         label: "Water heater size",
         type: "text",
@@ -632,6 +649,7 @@ export const SECTIONS: Section[] = [
         placeholder: "40 gallons",
       },
       {
+        showIf: { key: "heaterType", in: ["tank-gas", "tank-electric", "tankless"] },
         key: "heaterAge",
         label: "Water heater age",
         type: "text",
@@ -689,6 +707,7 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
+        showIf: { key: "evCharging", in: ["outlet-120", "outlet-240", "charger"] },
         key: "evNote",
         label: "EV charging details",
         type: "text",
@@ -706,6 +725,7 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
+        showIf: { key: "solar", in: ["owned", "leased"] },
         key: "solarNote",
         label: "How solar affects your bill",
         type: "text",
@@ -783,6 +803,7 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
+        showIf: { key: "cameras", in: ["exterior", "common", "interior"] },
         key: "cameraNote",
         label: "Camera details",
         type: "text",
@@ -851,7 +872,12 @@ export const SECTIONS: Section[] = [
           ["service", "Regular pest service"],
         ),
       },
-      { key: "pestService", label: "Pest service included", type: "tri" },
+      {
+        showIf: { key: "pestHistory", in: ["past", "service"] },
+        key: "pestService",
+        label: "Pest service included",
+        type: "tri",
+      },
       {
         key: "roofAge",
         label: "Roof",
@@ -914,7 +940,12 @@ export const SECTIONS: Section[] = [
           ["none", "None"],
         ),
       },
-      { key: "chimneyInspected", label: "Chimney inspected", type: "tri" },
+      {
+        showIf: { key: "fireplace", in: ["working", "gas-log"] },
+        key: "chimneyInspected",
+        label: "Chimney inspected",
+        type: "tri",
+      },
       { key: "partyWall", label: "Shares a wall with the neighbor", type: "tri" },
       {
         key: "quirks",
@@ -998,6 +1029,20 @@ export const SECTIONS: Section[] = [
     fields: [],
   },
 ];
+
+// Everything about a basement is moot when there isn't one, and laundry
+// hookups when there is no laundry — so those follow-ups stay hidden until the
+// first answer says they apply.
+function gate(section: SectionKey, key: string, values: string[], keep: string[]) {
+  const target = SECTIONS.find((s) => s.key === section)!;
+  for (const field of target.fields) {
+    if (field.key !== key && !keep.includes(field.key) && !field.showIf) {
+      field.showIf = { key, in: values };
+    }
+  }
+}
+gate("basement", "type", ["full", "partial", "crawlspace"], ["notes"]);
+gate("laundry", "location", ["basement", "kitchen", "bathroom", "closet"], ["notes"]);
 
 export const SECTION_BY_KEY = Object.fromEntries(
   SECTIONS.map((s) => [s.key, s]),

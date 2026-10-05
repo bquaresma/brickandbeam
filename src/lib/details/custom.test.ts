@@ -10,7 +10,14 @@ import {
   withCustomFields,
   type QuestionRecord,
 } from "./custom";
-import { publicSections, roomExtraFields, roomExtraLines } from "./format";
+import {
+  derivedSpaces,
+  groupSections,
+  highlights,
+  publicSections,
+  roomExtraFields,
+  roomExtraLines,
+} from "./format";
 import { parseFacts, parseRooms, parseSection } from "./schema";
 
 const bikeStorage: QuestionRecord = {
@@ -289,5 +296,182 @@ describe("isAdminEmail", () => {
   it("grants nobody access when unset", () => {
     process.env.ADMIN_EMAILS = "";
     expect(isAdminEmail("brian@example.com")).toBe(false);
+  });
+});
+
+describe("derivedSpaces", () => {
+  const rooms = [{ id: "r1", name: "Kitchen", level: "First floor" }];
+
+  it("puts each bathroom on its own floor", () => {
+    const spaces = derivedSpaces(
+      {
+        version: 1,
+        bathrooms: [
+          {
+            id: "a",
+            name: "Upstairs bath",
+            level: "Second floor",
+            tub: "clawfoot",
+            outlet: "none",
+          },
+          { id: "b", type: "half" },
+        ],
+      },
+      rooms,
+    );
+    expect(spaces.map((s) => [s.name, s.level])).toEqual([
+      ["Upstairs bath", "Second floor"],
+      ["Bathroom 2", ""],
+    ]);
+    expect(spaces[0].lines.map((l) => l.label)).toEqual(["Tub", "Outlets"]); // not "Floor"
+  });
+
+  it("includes the basement, with its laundry, when there is one", () => {
+    const [basement] = derivedSpaces(
+      {
+        version: 1,
+        basement: {
+          type: "full",
+          finish: "unfinished",
+          headClearance: "About 7 ft",
+          floor: "stone",
+        },
+        laundry: { location: "basement" },
+      },
+      rooms,
+    );
+    expect(basement).toMatchObject({
+      name: "Basement",
+      level: "Basement",
+      kind: "basement",
+    });
+    const labels = basement.lines.map((l) => l.label);
+    expect(labels).toEqual(["Type", "Finish", "Head clearance", "Laundry"]); // a summary, not every answer
+  });
+
+  it("leaves the basement out when there isn't one or the landlord already listed it", () => {
+    expect(derivedSpaces({ version: 1, basement: { type: "none" } }, rooms)).toEqual([]);
+    expect(derivedSpaces({ version: 1 }, rooms)).toEqual([]);
+    expect(derivedSpaces(null, rooms)).toEqual([]);
+    const listed = [...rooms, { id: "r2", name: "Cellar workshop", level: "Basement" }];
+    expect(derivedSpaces({ version: 1, basement: { type: "full" } }, listed)).toEqual([]);
+  });
+
+  it("never carries a 'Not sure' answer", () => {
+    const text = JSON.stringify(
+      derivedSpaces(
+        {
+          version: 1,
+          bathrooms: [{ id: "a", tub: "unsure", ventilation: "fan" }],
+          basement: { type: "full", finish: "unsure" },
+        },
+        rooms,
+      ),
+    );
+    expect(text).not.toMatch(/unsure|not sure/i);
+  });
+});
+
+describe("highlights", () => {
+  it("picks the facts a renter scans for, and the honest quirks", () => {
+    const g = highlights({
+      version: 1,
+      character: {
+        features: ["hardwood", "pocket-doors"],
+        fireplace: "working",
+        quirks: ["steep-stairs"],
+        partyWall: "yes",
+      },
+      bathrooms: [{ id: "a", tub: "clawfoot" }],
+      kitchen: { range: "gas" },
+      systems: { heat: "steam" },
+      basement: { type: "full", finish: "unfinished" },
+      energy: { evCharging: "outlet-240" },
+      tech: { lockType: "smart", internet: ["cable", "fiber"] },
+      outdoors: { porch: "yes" },
+    });
+    expect(g.highlights).toEqual([
+      "Original hardwood or pine floors",
+      "Pocket doors",
+      "Working fireplace",
+      "Claw-foot tub",
+      "Gas range",
+      "Steam heat",
+      "Full basement",
+      "EV charging",
+      "Smart lock",
+      "Fiber internet",
+    ]);
+    expect(g.quirks).toEqual([
+      "Steep or narrow stairs",
+      "Shares a wall with the neighbor",
+    ]);
+  });
+
+  it("says finished when the basement is finished, and caps the list at ten", () => {
+    expect(
+      highlights({ version: 1, basement: { type: "full", finish: "finished" } })
+        .highlights,
+    ).toEqual(["Finished basement"]);
+    const many = highlights({
+      version: 1,
+      character: { features: ["hardwood", "plaster", "crown", "x1"] },
+      kitchen: { range: "gas" },
+      systems: { heat: "forced-air" },
+      basement: { type: "full" },
+      energy: { evCharging: "charger", solar: "owned" },
+      tech: { lockType: "smart", internet: ["fiber"] },
+      outdoors: { porch: "yes", yard: "fenced" },
+      laundry: { location: "basement", washerHookup: "yes" },
+    });
+    expect(many.highlights.length).toBeLessThanOrEqual(10);
+  });
+
+  it("ignores 'Not sure', none, and nothing at all", () => {
+    expect(highlights(null)).toEqual({ highlights: [], quirks: [] });
+    const g = highlights({
+      version: 1,
+      kitchen: { range: "none" },
+      energy: { evCharging: "none", solar: "none" },
+      basement: { type: "none" },
+      systems: { heatFuel: "unsure" },
+    });
+    expect(g.highlights).toEqual([]);
+  });
+});
+
+describe("groupSections", () => {
+  it("collapses sections into four themed groups and drops empty ones", () => {
+    const sections = publicSections({
+      version: 1,
+      kitchen: { range: "gas", dishwasher: "no" },
+      basement: { type: "full" },
+      systems: { heat: "steam" },
+      outdoors: { porch: "yes" },
+    });
+    const groups = groupSections(sections);
+    expect(groups.map((g) => g.title)).toEqual([
+      "Inside the house",
+      "Systems, energy and tech",
+      "Living here",
+    ]);
+    expect(groups[0].count).toBe(3);
+    expect(groups[0].sections.map((s) => s.title)).toEqual(["Kitchen", "Basement"]);
+  });
+
+  it("opens the first group and 'Good to know' by default", () => {
+    const groups = groupSections(
+      publicSections({
+        version: 1,
+        kitchen: { range: "gas" },
+        systems: { heat: "steam" },
+        knownConditions: { items: ["water"] },
+      }),
+    );
+    expect(groups.map((g) => [g.key, g.open])).toEqual([
+      ["inside", true],
+      ["systems", false],
+      ["good", true],
+    ]);
   });
 });

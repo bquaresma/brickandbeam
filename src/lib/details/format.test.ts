@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { SECTION_BY_KEY } from "./catalog";
-import { publicSections, progress, roomLegend } from "./format";
+import { isVisible, progress, pruneHidden, publicSections, roomLegend } from "./format";
 import type { Details } from "./schema";
 
 describe("publicSections", () => {
@@ -80,7 +80,8 @@ describe("progress", () => {
     });
     expect(p.answered).toBe(1);
     expect(p.open).toBe(1);
-    expect(p.total).toBe(SECTION_BY_KEY.kitchen.fields.length - 1); // notes excluded
+    // Notes are excluded, and so is the follow-up that only applies to "no range".
+    expect(p.total).toBe(SECTION_BY_KEY.kitchen.fields.length - 2);
   });
 
   it("treats bathrooms as answered once one exists", () => {
@@ -103,5 +104,48 @@ describe("roomLegend", () => {
       roomLegend({ id: "1", name: "Kitchen", marker: "A", lengthFt: 11, widthFt: 14 }),
     ).toBe("A · Kitchen — 11 × 14 ft");
     expect(roomLegend({ id: "2", name: "Attic" })).toBe("Attic");
+  });
+});
+
+describe("follow-up questions", () => {
+  const kitchen = SECTION_BY_KEY.kitchen;
+  const basement = SECTION_BY_KEY.basement;
+  const hookups = kitchen.fields.find((f) => f.key === "rangeHookups")!;
+
+  it("appear only when the answer they depend on says they apply", () => {
+    expect(isVisible(hookups, {})).toBe(false);
+    expect(isVisible(hookups, { range: "gas" })).toBe(false);
+    expect(isVisible(hookups, { range: "none" })).toBe(true);
+  });
+
+  it("hide a whole basement's questions until there is one", () => {
+    const finish = basement.fields.find((f) => f.key === "finish")!;
+    const type = basement.fields.find((f) => f.key === "type")!;
+    expect(isVisible(finish, {})).toBe(false);
+    expect(isVisible(finish, { type: "none" })).toBe(false);
+    expect(isVisible(finish, { type: "full" })).toBe(true);
+    expect(isVisible(type, {})).toBe(true); // the gate itself is always asked
+  });
+
+  it("drop answers that no longer apply, and leave the rest alone", () => {
+    const pruned = pruneHidden(kitchen.fields, {
+      range: "gas",
+      rangeHookups: ["gas-line"],
+      dishwasher: "no",
+    });
+    expect(pruned).toEqual({ range: "gas", dishwasher: "no" });
+    const kept = { range: "none", rangeHookups: ["240v"] };
+    expect(pruneHidden(kitchen.fields, kept)).toBe(kept); // nothing stale: same object
+  });
+
+  it("never show a stale follow-up answer publicly, and don't count it", () => {
+    const sections = publicSections({
+      version: 1,
+      kitchen: { range: "gas", rangeHookups: ["gas-line"] },
+    });
+    expect(JSON.stringify(sections)).not.toContain("Gas line");
+    expect(progress(kitchen, { range: "gas", rangeHookups: ["gas-line"] }).answered).toBe(
+      1,
+    );
   });
 });
