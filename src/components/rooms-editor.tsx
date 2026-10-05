@@ -6,6 +6,7 @@ import { FieldInput } from "@/components/field-input";
 import { saveRooms } from "@/lib/actions/details";
 import type { Field } from "@/lib/details/catalog";
 import type { Room } from "@/lib/details/schema";
+import { useUnsavedWarning } from "@/lib/use-unsaved-warning";
 
 type Status =
   | { kind: "idle" }
@@ -30,6 +31,8 @@ export function RoomsEditor({
 }) {
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(initialRooms));
+  useUnsavedWarning(JSON.stringify(rooms) !== savedSnapshot);
 
   const update = (index: number, key: string, value: unknown) => {
     setRooms((all) => all.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
@@ -39,6 +42,7 @@ export function RoomsEditor({
   async function save() {
     setStatus({ kind: "saving" });
     const result = await saveRooms(propertyId, unitId, rooms);
+    if (!result?.error) setSavedSnapshot(JSON.stringify(rooms));
     setStatus(
       result?.error ? { kind: "error", message: result.error } : { kind: "saved" },
     );

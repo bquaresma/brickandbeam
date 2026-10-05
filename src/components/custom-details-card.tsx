@@ -19,6 +19,7 @@ import {
   type QuestionTypeName,
 } from "@/lib/details/custom";
 import type { Fact } from "@/lib/details/schema";
+import { useUnsavedWarning } from "@/lib/use-unsaved-warning";
 import type { QuestionView } from "@/lib/questions";
 
 const control =
@@ -54,6 +55,8 @@ export function CustomDetailsCard({
 }) {
   const router = useRouter();
   const [facts, setFacts] = useState(initialFacts);
+  const [savedFacts, setSavedFacts] = useState(() => JSON.stringify(initialFacts));
+  useUnsavedWarning(JSON.stringify(facts) !== savedFacts);
   const [factStatus, setFactStatus] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,6 +93,7 @@ export function CustomDetailsCard({
   async function saveFactRows() {
     setFactStatus("Saving…");
     const result = await saveFacts(propertyId, unitId, facts);
+    if (!result?.error) setSavedFacts(JSON.stringify(facts));
     setFactStatus(result?.error ?? "Saved");
   }
 

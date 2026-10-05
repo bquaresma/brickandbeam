@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { FieldInput } from "@/components/field-input";
+import { useReportProgress } from "@/components/walkthrough-shell";
 import { saveDetailsSection } from "@/lib/actions/details";
 import { UNSURE, type Field, type Section } from "@/lib/details/catalog";
-import { progress } from "@/lib/details/format";
+import { isVisible, progress, pruneHidden } from "@/lib/details/format";
 import type { SectionValue } from "@/lib/details/schema";
 
 type Entry = SectionValue;
@@ -38,20 +39,73 @@ export function DetailsCard({
 
   const value = section.repeatable ? entries : single;
   const stats = progress(section, value);
-  const touched = () => status.kind === "saved" && setStatus({ kind: "idle" });
 
-  async function save() {
+  // Tell the sidebar how far along this card is.
+  const report = useReportProgress();
+  useEffect(() => {
+    report(section.key, {
+      answered: stats.answered,
+      total: stats.total,
+      open: stats.open,
+    });
+  }, [report, section.key, stats.answered, stats.total, stats.open]);
+
+  // Autosave: save shortly after typing stops. Saves are chained, so an older
+  // save can never land after a newer one, and the latest answers always win.
+  const latest = useRef(value);
+  useEffect(() => {
+    latest.current = value;
+  }, [value]);
+  const lastSaved = useRef(JSON.stringify(value));
+  const chain = useRef<Promise<void>>(Promise.resolve());
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const pending = useRef(false);
+
+  const flush = useCallback(() => {
+    if (!pending.current) return;
+    pending.current = false;
+    const snapshot = JSON.stringify(latest.current);
+    lastSaved.current = snapshot;
+    chain.current = chain.current.then(async () => {
+      const result = await saveDetailsSection(
+        propertyId,
+        unitId,
+        section.key,
+        latest.current,
+      );
+      setStatus(
+        result?.error
+          ? { kind: "error", message: result.error }
+          : pending.current
+            ? { kind: "saving" }
+            : { kind: "saved" },
+      );
+    });
+  }, [propertyId, unitId, section.key]);
+
+  useEffect(() => {
+    if (JSON.stringify(value) === lastSaved.current) return;
+    pending.current = true;
     setStatus({ kind: "saving" });
-    const result = await saveDetailsSection(propertyId, unitId, section.key, value);
-    setStatus(
-      result?.error ? { kind: "error", message: result.error } : { kind: "saved" },
-    );
-  }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(flush, 900);
+    return () => clearTimeout(timer.current);
+  }, [value, flush]);
+
+  // Leaving the page with a save still waiting: send it now.
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      flush();
+    },
+    [flush],
+  );
 
   function fields(entry: Entry, set: (next: Entry) => void, prefix: string) {
-    return section.fields.flatMap((field: Field, i) => {
+    const visible = section.fields.filter((f) => isVisible(f, entry));
+    return visible.flatMap((field: Field, i) => {
       const startsGroup =
-        field.group && (i === 0 || section.fields[i - 1].group !== field.group);
+        field.group && (i === 0 || visible[i - 1].group !== field.group);
       const wide = (field.type === "text" && field.multiline) || field.type === "tags";
       const node = (
         <div key={field.key} className={wide ? "col-span-full" : undefined}>
@@ -65,8 +119,7 @@ export function DetailsCard({
             field={field}
             value={entry[field.key]}
             onChange={(next) => {
-              set({ ...entry, [field.key]: next });
-              touched();
+              set(pruneHidden(section.fields, { ...entry, [field.key]: next }));
             }}
           />
         </div>
@@ -129,7 +182,6 @@ export function DetailsCard({
                           i === index ? { ...x, name: e.target.value } : x,
                         ),
                       );
-                      touched();
                     }}
                     className="mt-1 block w-full max-w-sm rounded-md border border-stone-300 px-3 py-2 text-sm"
                   />
@@ -139,7 +191,6 @@ export function DetailsCard({
                   className="shrink-0 self-end rounded border border-red-200 px-3 py-2 text-xs text-red-700 hover:bg-red-50"
                   onClick={() => {
                     setEntries((all) => all.filter((_, i) => i !== index));
-                    touched();
                   }}
                 >
                   Remove
@@ -162,7 +213,6 @@ export function DetailsCard({
                 ...all,
                 { id: crypto.randomUUID().replace(/-/g, "").slice(0, 12) },
               ]);
-              touched();
             }}
             className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
           >
@@ -175,22 +225,13 @@ export function DetailsCard({
         </div>
       )}
 
-      <div className="mt-5 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={save}
-          disabled={status.kind === "saving"}
-          className="rounded-md bg-[#B1502F] px-4 py-2 text-sm font-medium text-white hover:bg-[#8F3F25] disabled:opacity-50"
-        >
-          {status.kind === "saving" ? "Saving…" : `Save ${section.title.toLowerCase()}`}
-        </button>
-        <p role="status" className="text-sm">
-          {status.kind === "saved" && <span className="text-green-700">Saved</span>}
-          {status.kind === "error" && (
-            <span className="text-red-600">{status.message}</span>
-          )}
-        </p>
-      </div>
+      <p role="status" aria-live="polite" className="mt-5 min-h-5 text-sm">
+        {status.kind === "saving" && <span className="text-stone-500">Saving…</span>}
+        {status.kind === "saved" && <span className="text-green-700">Saved</span>}
+        {status.kind === "error" && (
+          <span className="text-red-600">{status.message}</span>
+        )}
+      </p>
     </section>
   );
 }
