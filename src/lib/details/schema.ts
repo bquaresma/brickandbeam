@@ -10,6 +10,7 @@ import {
   type Section,
   type SectionKey,
 } from "./catalog";
+import { roomQuestionFields, withCustomFields, type QuestionRecord } from "./custom";
 
 // Validation is generated from the catalog, so a form can only ever submit
 // answers the catalog offers.
@@ -36,7 +37,9 @@ function fieldSchema(field: Field): z.ZodType {
         .trim()
         .max(field.max ?? 500);
     case "number":
-      return z.number().int().min(field.min).max(field.max);
+      return (field.decimal ? z.number() : z.number().int())
+        .min(field.min)
+        .max(field.max);
   }
 }
 
@@ -51,7 +54,8 @@ function entrySchema(section: Section) {
 }
 
 export type SectionValue = Record<string, unknown>;
-export type Details = { version: 1 } & Partial<
+export type Fact = { id: string; label: string; value: string };
+export type Details = { version: 1; facts?: Fact[] } & Partial<
   Record<SectionKey, SectionValue | SectionValue[]>
 >;
 
@@ -82,9 +86,12 @@ function describeIssue(section: Section, issue: z.core.$ZodIssue): string {
 export function parseSection(
   key: SectionKey,
   input: unknown,
+  questions: QuestionRecord[] = [],
 ): ParseResult<SectionValue | SectionValue[]> {
-  const section = SECTION_BY_KEY[key];
-  if (!section) return { ok: false, error: "Unknown section." };
+  const base = SECTION_BY_KEY[key];
+  if (!base) return { ok: false, error: "Unknown section." };
+  // Questions the landlord can see (their own plus approved ones) extend the card.
+  const section = withCustomFields(base, questions);
 
   const cleaned = clean(input);
   const schema = section.repeatable
@@ -115,13 +122,40 @@ export const roomSchema = z.object({
   notes: z.string().trim().max(500).optional(),
   // For bedrooms: does it count as one (closet and an exit window)?
   countsAsBedroom: z.enum(["yes", "no", UNSURE]).optional(),
+  roomHeat: z.enum(["radiator", "vent", "baseboard", "none"]).optional(),
+  ceilingFan: z.enum(["yes", "no", UNSURE]).optional(),
+  ethernetJack: z.enum(["yes", "no", UNSURE]).optional(),
 });
 export type Room = z.infer<typeof roomSchema>;
 
-export function parseRooms(input: unknown): ParseResult<Room[]> {
+// Questions defined "for each room" add their own keys to every room.
+export function parseRooms(
+  input: unknown,
+  questions: QuestionRecord[] = [],
+): ParseResult<Room[]> {
+  const extra: Record<string, z.ZodType> = {};
+  for (const field of roomQuestionFields(questions))
+    extra[field.key] = fieldSchema(field).optional();
   const result = z
-    .array(roomSchema)
+    .array(roomSchema.extend(extra))
     .max(40)
+    .safeParse(clean(input) ?? []);
+  if (!result.success) return { ok: false, error: result.error.issues[0].message };
+  return { ok: true, value: result.data as Room[] };
+}
+
+// ----- Free-form facts ("Internet: fiber available") ------------------------
+
+const factSchema = z.object({
+  id: z.string().trim().min(1).max(40),
+  label: z.string().trim().min(1, "Every fact needs a label.").max(80),
+  value: z.string().trim().min(1, "Every fact needs a value.").max(200),
+});
+
+export function parseFacts(input: unknown): ParseResult<Fact[]> {
+  const result = z
+    .array(factSchema)
+    .max(30)
     .safeParse(clean(input) ?? []);
   if (!result.success) return { ok: false, error: result.error.issues[0].message };
   return { ok: true, value: result.data };

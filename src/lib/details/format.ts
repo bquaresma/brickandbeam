@@ -1,10 +1,5 @@
-import {
-  SECTION_BY_KEY,
-  UNSURE,
-  type Field,
-  type Section,
-  type SectionKey,
-} from "./catalog";
+import { SECTIONS, UNSURE, type Field, type Section, type SectionKey } from "./catalog";
+import { withCustomFields, type QuestionRecord } from "./custom";
 import type { Details, Room, SectionValue } from "./schema";
 
 export type Line = { label: string; text: string; multiline?: boolean };
@@ -66,20 +61,35 @@ export type PublicSection = {
 };
 
 // Everything the public page shows, already filtered. A section with nothing
-// to say is omitted entirely.
-export function publicSections(details: Details | null | undefined): PublicSection[] {
+// to say is omitted entirely. `questions` are the custom questions visible to
+// the landlord, so their answers show too; free-form facts join "More about
+// the house".
+export function publicSections(
+  details: Details | null | undefined,
+  questions: QuestionRecord[] = [],
+): PublicSection[] {
   if (!details) return [];
   const out: PublicSection[] = [];
-  for (const section of Object.values(SECTION_BY_KEY)) {
+  for (const base of SECTIONS) {
+    const section = withCustomFields(base, questions);
     const raw = details[section.key];
-    if (!raw) continue;
-    const entries = section.repeatable ? (raw as SectionValue[]) : [raw as SectionValue];
+    const entries = raw
+      ? section.repeatable
+        ? (raw as SectionValue[])
+        : [raw as SectionValue]
+      : [];
     const blocks = entries
       .map((entry, i) => ({
         title: section.repeatable ? bathroomTitle(entry, i) : undefined,
         lines: entryLines(section, entry),
       }))
       .filter((b) => b.lines.length > 0);
+
+    if (section.key === "general" && details.facts?.length) {
+      const factLines = details.facts.map((f) => ({ label: f.label, text: f.value }));
+      if (blocks.length) blocks[0].lines.push(...factLines);
+      else blocks.push({ title: undefined, lines: factLines });
+    }
     if (blocks.length) out.push({ key: section.key, title: section.title, blocks });
   }
   return out;
@@ -129,4 +139,34 @@ export function roomLegend(room: Room): string {
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+// Answers to the questions that aren't part of a room's core description
+// (heat, fan, jack, and any "for each room" questions a landlord added).
+const ROOM_CORE_KEYS = new Set([
+  "id",
+  "name",
+  "type",
+  "level",
+  "marker",
+  "lengthFt",
+  "widthFt",
+  "ceilingNote",
+  "light",
+  "tags",
+  "notes",
+  "countsAsBedroom",
+]);
+
+export function roomExtraFields(roomFields: Field[]): Field[] {
+  return roomFields.filter((f) => !ROOM_CORE_KEYS.has(f.key));
+}
+
+export function roomExtraLines(room: Room, extraFields: Field[]): Line[] {
+  const lines: Line[] = [];
+  for (const field of extraFields) {
+    const text = describe(field, (room as Record<string, unknown>)[field.key]);
+    if (text) lines.push({ label: field.label, text });
+  }
+  return lines;
 }

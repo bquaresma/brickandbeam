@@ -141,6 +141,7 @@ export function FieldInput({
             id={id}
             type="number"
             inputMode="decimal"
+            step={field.decimal ? "any" : 1}
             min={field.min}
             max={field.max}
             value={typeof value === "number" ? value : ""}

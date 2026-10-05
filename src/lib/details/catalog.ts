@@ -20,7 +20,13 @@ export type Field =
   | (Base & { type: "tri" })
   | (Base & { type: "tags"; options: Option[]; allowCustom?: boolean })
   | (Base & { type: "text"; max?: number; multiline?: boolean; placeholder?: string })
-  | (Base & { type: "number"; min: number; max: number; unit?: string });
+  | (Base & {
+      type: "number";
+      min: number;
+      max: number;
+      unit?: string;
+      decimal?: boolean;
+    });
 
 export const SECTION_KEYS = [
   "kitchen",
@@ -28,9 +34,13 @@ export const SECTION_KEYS = [
   "basement",
   "laundry",
   "systems",
+  "energy",
+  "tech",
+  "upkeep",
   "character",
   "knownConditions",
   "outdoors",
+  "general",
 ] as const;
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
@@ -661,6 +671,206 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
+    key: "energy",
+    title: "Energy, solar and EV charging",
+    intro:
+      "What a renter with a car, a solar bill or a power outage in mind wants to know.",
+    fields: [
+      {
+        key: "evCharging",
+        label: "EV charging",
+        type: "select",
+        options: opts(
+          ["none", "None"],
+          ["outlet-120", "Standard 120 V outlet at the parking spot"],
+          ["outlet-240", "240 V outlet at the parking spot"],
+          ["charger", "EV charger installed"],
+          ["nearby", "Public charging nearby only"],
+        ),
+      },
+      {
+        key: "evNote",
+        label: "EV charging details",
+        type: "text",
+        max: 200,
+        placeholder: "Where it is, whether the electric cost is metered separately…",
+      },
+      {
+        key: "solar",
+        label: "Solar panels",
+        type: "select",
+        options: opts(
+          ["none", "None"],
+          ["owned", "Panels owned by the landlord"],
+          ["leased", "Leased panels"],
+        ),
+      },
+      {
+        key: "solarNote",
+        label: "How solar affects your bill",
+        type: "text",
+        max: 200,
+        placeholder: "Credit applies to your account / landlord keeps the credit",
+      },
+      { key: "battery", label: "Battery backup", type: "tri" },
+      { key: "generator", label: "Generator", type: "tri" },
+      { key: "smartThermostat", label: "Smart thermostat", type: "tri" },
+      { key: "notes", label: "Notes", type: "text", multiline: true, max: 400 },
+    ],
+  },
+  {
+    key: "tech",
+    title: "Technology and security",
+    intro: "Locks, cameras and connectivity — including anything that can record.",
+    fields: [
+      {
+        key: "internet",
+        label: "Internet available at the address",
+        type: "tags",
+        options: opts(
+          ["fiber", "Fiber"],
+          ["cable", "Cable"],
+          ["dsl", "DSL"],
+          ["fixed-wireless", "Home 5G or fixed wireless"],
+        ),
+      },
+      {
+        key: "internetNote",
+        label: "Providers and speeds you know of",
+        type: "text",
+        max: 200,
+      },
+      { key: "ethernet", label: "Ethernet wiring in the house", type: "tri" },
+      {
+        key: "lockType",
+        label: "Front door lock",
+        type: "select",
+        group: "Locks and doors",
+        options: opts(
+          ["keyed", "Keyed deadbolt"],
+          ["keypad", "Keypad lock"],
+          ["smart", "Smart lock (app or code)"],
+        ),
+      },
+      {
+        key: "keys",
+        label: "Keys provided",
+        type: "text",
+        max: 80,
+        placeholder: "Two sets",
+      },
+      {
+        key: "doorbell",
+        label: "Doorbell",
+        type: "select",
+        options: opts(
+          ["none", "None"],
+          ["wired", "Doorbell, no camera"],
+          ["camera", "Video doorbell"],
+        ),
+      },
+      {
+        key: "cameras",
+        label: "Security cameras",
+        type: "select",
+        group: "Cameras and alarms",
+        help: "If a camera can record a tenant's own space, say so. Your attorney can advise on wording.",
+        options: opts(
+          ["none", "None"],
+          ["exterior", "Exterior only"],
+          ["common", "Exterior and shared areas"],
+          ["interior", "Inside the home"],
+        ),
+      },
+      {
+        key: "cameraNote",
+        label: "Camera details",
+        type: "text",
+        max: 200,
+        placeholder: "Who can view the footage, where they point",
+      },
+      {
+        key: "alarm",
+        label: "Alarm system",
+        type: "select",
+        options: opts(
+          ["none", "None"],
+          ["monitored", "Monitored"],
+          ["unmonitored", "Not monitored"],
+        ),
+      },
+      { key: "motionLights", label: "Motion-sensor exterior lights", type: "tri" },
+      {
+        key: "detectors",
+        label: "Smoke and carbon-monoxide detectors",
+        type: "select",
+        options: opts(
+          ["hardwired", "Hard-wired"],
+          ["battery", "Battery"],
+          ["both", "Hard-wired and battery"],
+          ["none", "None"],
+        ),
+      },
+      { key: "notes", label: "Notes", type: "text", multiline: true, max: 400 },
+    ],
+  },
+  {
+    key: "upkeep",
+    title: "Upkeep and responsibilities",
+    intro: "Who does what, and the house's maintenance history.",
+    fields: [
+      {
+        key: "snow",
+        label: "Snow and ice removal",
+        type: "select",
+        options: opts(
+          ["tenant", "Tenant"],
+          ["landlord", "Landlord"],
+          ["shared", "Shared with the neighbor"],
+        ),
+      },
+      {
+        key: "yardCare",
+        label: "Yard care",
+        type: "select",
+        options: opts(
+          ["tenant", "Tenant"],
+          ["landlord", "Landlord"],
+          ["shared", "Shared"],
+          ["none", "No yard"],
+        ),
+      },
+      {
+        key: "pestHistory",
+        label: "Pest history",
+        type: "select",
+        group: "History",
+        options: opts(
+          ["none", "None known"],
+          ["past", "Past issue, treated"],
+          ["service", "Regular pest service"],
+        ),
+      },
+      { key: "pestService", label: "Pest service included", type: "tri" },
+      {
+        key: "roofAge",
+        label: "Roof",
+        type: "text",
+        max: 80,
+        placeholder: "Replaced about 2018",
+      },
+      {
+        key: "updates",
+        label: "Major updates and when",
+        type: "text",
+        multiline: true,
+        max: 400,
+        placeholder: "New boiler 2021, repointed 2019…",
+      },
+      { key: "notes", label: "Notes", type: "text", multiline: true, max: 400 },
+    ],
+  },
+  {
     key: "character",
     title: "Character and quirks",
     intro: "What makes this house itself — the features, and the things to know.",
@@ -780,6 +990,13 @@ export const SECTIONS: Section[] = [
       { key: "notes", label: "Notes", type: "text", multiline: true, max: 400 },
     ],
   },
+  {
+    key: "general",
+    title: "More about the house",
+    intro:
+      "Anything else about the house. Questions you add yourself (below) can be placed in this card or in any other.",
+    fields: [],
+  },
 ];
 
 export const SECTION_BY_KEY = Object.fromEntries(
@@ -816,6 +1033,19 @@ export const ROOM_FIELDS: Field[] = [
     placeholder: "Two south windows",
   },
   { key: "tags", label: "Features", type: "tags", allowCustom: true, options: ROOM_TAGS },
+  {
+    key: "roomHeat",
+    label: "Heat in this room",
+    type: "select",
+    options: opts(
+      ["radiator", "Radiator"],
+      ["vent", "Vent"],
+      ["baseboard", "Baseboard"],
+      ["none", "None"],
+    ),
+  },
+  { key: "ceilingFan", label: "Ceiling fan", type: "tri" },
+  { key: "ethernetJack", label: "Ethernet or cable jack", type: "tri" },
   {
     key: "countsAsBedroom",
     label: "Counts as a bedroom",

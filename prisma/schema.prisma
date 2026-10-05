@@ -37,6 +37,9 @@ model User {
   // model — not needed for the Phase 1 skeleton.
   properties Property[]
 
+  // Questions this user defined for the house walk-through.
+  customQuestions CustomQuestion[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -458,4 +461,57 @@ model ListingPhoto {
 
   @@index([listingId, sortOrder])
   @@map("listing_photos")
+}
+
+enum QuestionType {
+  TRI // Yes / No / Not sure
+  TEXT
+  NUMBER
+  SELECT
+}
+
+// PRIVATE: only the author sees it. SUBMITTED: the author suggested it for
+// everyone and it is waiting for review. APPROVED: every landlord sees it.
+// REJECTED: not added for everyone, but it keeps working for its author.
+enum QuestionStatus {
+  PRIVATE
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+// A question a landlord added to the walk-through beyond the built-in catalog
+// (src/lib/details/catalog.ts). It works for its author immediately; a
+// reviewed question becomes available to everyone. Answers live in
+// Unit.details / Unit.rooms under `key`.
+model CustomQuestion {
+  id       String @id @default(cuid())
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // "x_" + random hex. Never reused, so a stored answer always means the same
+  // question — and a reviewed question can graduate into the code catalog
+  // under the same key without touching any data.
+  key   String  @unique
+  label String
+  help  String?
+
+  type    QuestionType
+  options Json? // SELECT: [{ value, label }]
+  unit    String? // NUMBER: e.g. "ft", "kW"
+
+  // A walk-through section key, or "rooms" to ask once per room.
+  section String
+
+  status      QuestionStatus @default(PRIVATE)
+  submitNote  String? // the author's "why this matters"
+  reviewNote  String? // the reviewer's reason, shown to the author
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([authorId])
+  @@map("custom_questions")
 }
