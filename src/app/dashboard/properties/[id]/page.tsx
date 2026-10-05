@@ -64,6 +64,14 @@ export default async function PropertyDetailPage({
                 : "Preview listing"}
             </Link>
           )}
+          {wholeHouseUnit?.listing && (
+            <Link
+              href={`/dashboard/properties/${property.id}/units/${wholeHouseUnit.id}/share`}
+              className="rounded-md border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            >
+              Post this listing
+            </Link>
+          )}
           <Link
             href={`/dashboard/properties/${property.id}/edit`}
             className="rounded-md border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
@@ -292,6 +300,14 @@ export default async function PropertyDetailPage({
                               {unit.listing.status === "PUBLISHED"
                                 ? "View public page"
                                 : "Preview"}
+                            </Link>
+                          )}
+                          {unit.listing && (
+                            <Link
+                              href={`/dashboard/properties/${property.id}/units/${unit.id}/share`}
+                              className="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-white"
+                            >
+                              Post this listing
                             </Link>
                           )}
                           <Link

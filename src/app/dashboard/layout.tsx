@@ -24,7 +24,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#FBF0E1]">
-      <header className="border-b border-[#e7d9c3] bg-white">
+      <header className="border-b border-[#e7d9c3] bg-white print:hidden">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-4">
           <div className="flex items-center gap-4 sm:gap-6">
             <Link href="/dashboard" className="font-semibold text-[#3D2E24]">
