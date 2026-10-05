@@ -1,4 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
+import { unzipSync } from "fflate";
 import sharp from "sharp";
 
 const password = "correct-horse-battery";
@@ -29,7 +30,7 @@ async function expandDetails(page: Page) {
   while ((await closed.count()) > 0) await closed.first().click();
 }
 
-async function createDraftListing(page: Page) {
+async function createDraftListing(page: Page, story = "A house with a story.") {
   await page.goto("/dashboard/properties/new");
   await expect(page.locator('input[name="isWholeHouse"]')).toBeChecked();
   await page.locator("#addressLine1").fill("1 Test Street");
@@ -42,7 +43,7 @@ async function createDraftListing(page: Page) {
 
   await page.getByRole("link", { name: "+ Add listing" }).click();
   await page.locator("#headline").fill("Smoke test house");
-  await page.locator("#story").fill("A house with a story.");
+  await page.locator("#story").fill(story);
   await page.getByRole("button", { name: "Create listing" }).click();
   await page.waitForURL(/\/dashboard\/properties\/[^/]+$/);
 
@@ -765,4 +766,138 @@ test("public details: at-a-glance chips and foldable groups", async ({
   // One tap opens a folded group.
   await systems.locator("summary").click();
   await expect(systems.getByText("Steam radiators")).toBeVisible();
+});
+
+test("channel kit: ready-to-paste ads, wording check, photo zip, flyer", async ({
+  page,
+  browser,
+}) => {
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await signUp(page, "kit");
+  const { propertyUrl, listingPath } = await createDraftListing(
+    page,
+    "Perfect for young professionals. Sunny rooms with original floors.",
+  );
+  const listingId = listingPath.split("/").pop()!;
+
+  // Two photos; the first becomes the hero.
+  const jpeg = await sharp({
+    create: {
+      width: 3000,
+      height: 2000,
+      channels: 3,
+      background: { r: 120, g: 80, b: 60 },
+    },
+  })
+    .jpeg()
+    .toBuffer();
+  for (const area of ["EXTERIOR", "KITCHEN"]) {
+    const response = await page.request.post("/api/uploads", {
+      multipart: {
+        listingId,
+        area,
+        file: { name: `${area}.jpg`, mimeType: "image/jpeg", buffer: jpeg },
+      },
+    });
+    expect(response.status()).toBe(201);
+  }
+
+  await page.goto(propertyUrl);
+  await page.getByRole("link", { name: "Post this listing" }).click();
+  await page.waitForURL(/\/share$/);
+  await expect(page.getByRole("heading", { name: "Post this listing" })).toBeVisible();
+
+  // One card per launch channel.
+  for (const name of [
+    "Zillow Rental Manager",
+    "Craigslist",
+    "Facebook Marketplace",
+    "Zumper",
+    "Facebook groups",
+  ]) {
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  }
+
+  // What's missing is said plainly, not guessed.
+  await expect(page.getByText("The ads will read better with:")).toBeVisible();
+  await expect(page.getByText("the monthly rent (unit details)")).toBeVisible();
+
+  // The wording check flags the phrase, explains it, and doesn't block anything.
+  const check = page.getByRole("region", { name: "Wording check" });
+  await expect(check).toContainText("“Perfect for young professionals”");
+  await expect(check).toContainText("Advisory only");
+
+  // Every ad carries the disclosures for a 1900 house.
+  const craigslist = page.locator("#craigslist");
+  await expect(craigslist).toContainText("Built in 1900");
+  await expect(craigslist).toContainText("lead-based paint");
+  await expect(craigslist).toContainText("Equal Housing Opportunity.");
+  await expect(page.locator("#facebook-group")).toContainText(
+    "Equal Housing Opportunity.",
+  );
+  await expect(page.locator("#zillow")).toContainText("Property type");
+
+  // Copy puts exactly the visible text on the clipboard.
+  await craigslist
+    .getByRole("button", { name: "Copy Posting title for Craigslist" })
+    .click();
+  await expect(
+    craigslist.getByRole("button", { name: "Copy Posting title for Craigslist" }),
+  ).toHaveText("Copied");
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const titleRow = craigslist
+    .locator("div")
+    .filter({ has: page.getByText("Posting title", { exact: true }) });
+  const shownTitle = (
+    await titleRow.locator("span.break-words").first().innerText()
+  ).trim();
+  expect(copied).toBe(shownTitle);
+  expect(copied.length).toBeGreaterThan(0);
+  expect(copied.length).toBeLessThanOrEqual(70);
+
+  // The numbered photo zip: hero first, 2048 px exports, no location data.
+  const zip = await page.request.get(`/api/listings/${listingId}/photos.zip`);
+  expect(zip.status()).toBe(200);
+  expect(zip.headers()["content-type"]).toBe("application/zip");
+  expect(zip.headers()["content-disposition"]).toContain("-photos.zip");
+  const files = unzipSync(new Uint8Array(await zip.body()));
+  expect(Object.keys(files)).toEqual(["01-exterior-hero.jpg", "02-kitchen.jpg"]);
+  const meta = await sharp(Buffer.from(files["01-exterior-hero.jpg"])).metadata();
+  expect(meta.width).toBe(2048);
+  expect(meta.exif).toBeUndefined();
+
+  // Only the owner can download it.
+  const stranger = await browser.newContext();
+  expect(
+    (await stranger.request.get(`/api/listings/${listingId}/photos.zip`)).status(),
+  ).toBe(401);
+  const other = await (await browser.newContext()).newPage();
+  await signUp(other, "kitother");
+  expect(
+    (await other.request.get(`/api/listings/${listingId}/photos.zip`)).status(),
+  ).toBe(404);
+  expect((await other.goto(page.url()))?.status()).toBe(404);
+
+  // The flyer.
+  await page.getByRole("link", { name: "Make a printable flyer" }).click();
+  await page.waitForURL(/\/flyer$/);
+  const flyer = page.getByRole("article", { name: "Flyer" });
+  await expect(flyer).toContainText("Smoke test house");
+  await expect(flyer).toContainText("Showings by appointment");
+  await expect(flyer).toContainText("lead-based paint");
+  await expect(flyer).toContainText("Equal Housing Opportunity.");
+  await expect(flyer.locator("picture img")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Print or save as PDF" })).toBeVisible();
+
+  // Printing drops the dashboard chrome and the toolbar, keeping only the flyer...
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByRole("link", { name: "Leads" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Print or save as PDF" })).toBeHidden();
+  await expect(flyer).toBeVisible();
+
+  // ...and fits on one letter-size page.
+  const pdf = await page.pdf({ format: "Letter", printBackground: true });
+  const pages = pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) ?? [];
+  expect(pages).toHaveLength(1);
+  await page.emulateMedia({ media: "screen" });
 });

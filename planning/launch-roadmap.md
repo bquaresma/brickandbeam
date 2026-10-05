@@ -238,6 +238,13 @@ Needs a public URL. Photos still generate the 1200×630 share variant in 1.1, so
 
 ### 1.4 Channel kit (M)
 
+**Status (Oct 5): built and tested** — Zillow Rental Manager, Craigslist, Facebook Marketplace, Zumper and Facebook-group
+formatters with per-field Copy buttons, the numbered photo zip, the printable flyer (checked to fit one page), and the
+advisory wording check, on a new "Post this listing" page. Every ad carries the lead-paint notice and the Equal Housing line.
+A public phone number field was added for ads and flyers. **Still to do:** the rental permit number appears once 1.6 exists;
+the QR code and `?src=` link tracking wait for Stage 4; and the wording-check phrases and the lead-notice wording need the
+attorney's review (§17). Site field names and limits are unconfirmed beyond Craigslist's required fields and 24-photo cap.
+
 Posting is **manual by design** — Craigslist and Facebook restrict automated posting by individual landlords. The kit makes
 manual posting fast and consistent (channels and rules in §9). Until Stage 4 every ad is **self-contained** (text + photos +
 the public contact email); after it, ads also carry the listing link.

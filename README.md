@@ -189,6 +189,21 @@ publicly — it stays on the landlord's page as an open item. Answers are stored
 question never needs a migration. Floor plans are `ListingPhoto` rows of kind `FLOOR_PLAN`, one per
 level (a new upload replaces the old one), shown as "Approximate — not to scale".
 
+### Posting your listing (the channel kit)
+
+**Post this listing** (on the property page, once a listing exists) writes ready-to-paste ads for
+Zillow Rental Manager, Craigslist, Facebook Marketplace, Zumper and Facebook groups, in the order each
+site's form asks for them, with a Copy button per field. You post them yourself — individual landlords
+can't post automatically, and the app doesn't try. The text is built by pure, tested formatters in
+`src/lib/channels`; every ad ends with the lead-paint notice (for a house built before 1978) and the
+Equal Housing line, and a rental permit number is added once the compliance tracker says one applies.
+Fields with nothing to say stay empty rather than being invented. The page also offers a numbered
+**photo zip** (hero first, 2048 px exports, no location data, floor plans last), a printable one-page
+**flyer** (print or save as PDF), and an advisory **wording check** that flags phrases describing who
+should live somewhere instead of the home. The check never blocks anything, isn't legal advice, and a
+clean result doesn't make an ad compliant. Field names and photo limits follow each site's form as
+commonly described; confirm them on screen, since sites change.
+
 ### Your own details and questions
 
 Beyond the built-in catalog, a landlord can add **quick facts** (a label and a value, shown under
